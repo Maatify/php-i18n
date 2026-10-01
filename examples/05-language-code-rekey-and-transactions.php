@@ -38,8 +38,18 @@ $core->scopes->create(new CreateScopeCommand('web', 'Website'));
 $core->domains->create(new CreateDomainCommand('home', 'Home page'));
 $core->assignments->assign('web', 'home');
 $keyId = $core->writer->createKey(new CreateKeyCommand('web', 'home', 'title'));
-$core->writer->upsertTranslation(new UpsertTranslationCommand('ar', $keyId, 'مرحبا'));
-$core->writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome'));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'ar',
+    keyId: $keyId,
+    value: 'مرحبا',
+    type: null,
+));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $keyId,
+    value: 'Welcome',
+    type: null,
+));
 
 // 1. Rename the code in YOUR registry and re-key I18n in ONE transaction.
 $pdo->beginTransaction();

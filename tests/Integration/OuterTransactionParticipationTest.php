@@ -28,7 +28,7 @@ final class OuterTransactionParticipationTest extends MysqlIntegrationTestCase
     public function testWithoutAnOuterTransactionTheMutationCommitsByItself(): void
     {
         $id = $this->createKey('ct', 'home', 'k');
-        $this->upsert('ar', $id, 'v');
+        $this->upsert('ar', $id, 'v', null);
 
         self::assertFalse($this->pdo()->inTransaction());
         self::assertSame(1, $this->scalarInt('SELECT COUNT(*) FROM maa_i18n_keys'));
@@ -41,7 +41,7 @@ final class OuterTransactionParticipationTest extends MysqlIntegrationTestCase
         $pdo->beginTransaction();
 
         $id = $this->createKey('ct', 'home', 'k');
-        $this->upsert('ar', $id, 'v');
+        $this->upsert('ar', $id, 'v', null);
         $this->scopeManagement->setActive($this->scalarInt("SELECT id FROM maa_i18n_scopes WHERE code = 'ct'"), false);
 
         self::assertTrue($pdo->inTransaction(), 'I18n must not commit the caller-owned transaction');

@@ -91,7 +91,12 @@ final class KeyAndTranslationManagementTest extends MysqlIntegrationTestCase
             static fn() => new CreateKeyCommand('ct', 'home', 'k', str_repeat('d', 256)),
             static fn() => new RenameKeyCommand(0, 'ct', 'home', 'k'),
             static fn() => new RenameKeyCommand(1, 'ct', 'home', ' '),
-            static fn() => new UpsertTranslationCommand('ar', 0, 'v'),
+            static fn() => new UpsertTranslationCommand(
+                languageCode: 'ar',
+                keyId: 0,
+                value: 'v',
+                type: null,
+            ),
         ] as $build) {
             try {
                 $build();
@@ -102,14 +107,19 @@ final class KeyAndTranslationManagementTest extends MysqlIntegrationTestCase
         }
 
         $this->expectException(InvalidLanguageCodeException::class);
-        new UpsertTranslationCommand('   ', 1, 'v');
+        new UpsertTranslationCommand(
+            languageCode: '   ',
+            keyId: 1,
+            value: 'v',
+            type: null,
+        );
     }
 
     public function testAnEmptyValueIsAValidAuthoritativeTranslation(): void
     {
         $key = $this->createKey('ct', 'home', 'k');
 
-        $this->upsert('ar', $key, '');
+        $this->upsert('ar', $key, '', null);
 
         $row = $this->translations->getByLanguageAndKey('ar', $key);
         self::assertNotNull($row);
@@ -154,7 +164,7 @@ final class KeyAndTranslationManagementTest extends MysqlIntegrationTestCase
     public function testRenameMovesTheKeyAndItsDerivedSummaryFollows(): void
     {
         $a = $this->createKey('ct', 'home', 'a');
-        $this->upsert('ar', $a, 'x');
+        $this->upsert('ar', $a, 'x', null);
 
         $this->renameKey($a, 'ct', 'auth', 'a2');
 
@@ -170,11 +180,11 @@ final class KeyAndTranslationManagementTest extends MysqlIntegrationTestCase
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
         $c = $this->createKey('ct', 'home', 'c');
-        $this->upsert('ar', $a, 'x');
-        $this->upsert('en', $a, 'x');
-        $this->upsert('ar', $b, 'x');
-        $this->upsert('AR', $c, 'x'); // different exact code: never matches 'ar'
-        $this->upsert(null, $c, 'x');
+        $this->upsert('ar', $a, 'x', null);
+        $this->upsert('en', $a, 'x', null);
+        $this->upsert('ar', $b, 'x', null);
+        $this->upsert('AR', $c, 'x', null); // different exact code: never matches 'ar'
+        $this->upsert(null, $c, 'x', null);
 
         $all = $this->managementRead->pageDomainKeySummaries($this->summaryCriteria(['ar', 'en']));
         $byKey = [];
@@ -204,8 +214,8 @@ final class KeyAndTranslationManagementTest extends MysqlIntegrationTestCase
     {
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
-        $this->upsert('ar', $a, 'مرحبا');
-        $this->upsert('en', $b, 'Hello');
+        $this->upsert('ar', $a, 'مرحبا', null);
+        $this->upsert('en', $b, 'Hello', null);
 
         $page = $this->managementRead->pageDomainTranslationGrid($this->gridCriteria(['ar', 'en']));
         self::assertSame(4, $page->total);
@@ -238,8 +248,8 @@ final class KeyAndTranslationManagementTest extends MysqlIntegrationTestCase
     {
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'auth', 'b');
-        $this->upsert('ar', $a, 'A-ar');
-        $this->upsert('AR', $b, 'B-AR');
+        $this->upsert('ar', $a, 'A-ar', null);
+        $this->upsert('AR', $b, 'B-AR', null);
 
         $page = $this->managementRead->pageLanguageTranslationValues(new LanguageTranslationValuesCriteria('ar'));
         self::assertSame(2, $page->total);

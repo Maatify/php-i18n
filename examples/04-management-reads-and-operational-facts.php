@@ -41,9 +41,24 @@ $ids = [];
 foreach (['title', 'subtitle', 'footer'] as $part) {
     $ids[$part] = $core->writer->createKey(new CreateKeyCommand('web', 'home', $part));
 }
-$core->writer->upsertTranslation(new UpsertTranslationCommand('en', $ids['title'], 'Welcome'));
-$core->writer->upsertTranslation(new UpsertTranslationCommand('en', $ids['subtitle'], 'Hello'));
-$core->writer->upsertTranslation(new UpsertTranslationCommand('ar', $ids['title'], 'مرحبا'));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $ids['title'],
+    value: 'Welcome',
+    type: null,
+));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $ids['subtitle'],
+    value: 'Hello',
+    type: null,
+));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'ar',
+    keyId: $ids['title'],
+    value: 'مرحبا',
+    type: null,
+));
 
 // Paginated key list of one scope. Pagination mechanics come from maatify/persistence.
 $keys = $core->managementRead->searchKeys(new KeyListCriteria(

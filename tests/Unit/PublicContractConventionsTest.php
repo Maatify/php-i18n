@@ -22,6 +22,7 @@ use Maatify\I18n\Management\Criteria\DomainTranslationGridCriteria;
 use Maatify\I18n\Management\Criteria\KeyListCriteria;
 use Maatify\I18n\Management\Criteria\LanguageTranslationValuesCriteria;
 use Maatify\I18n\Management\Criteria\ScopeDomainListCriteria;
+use Maatify\I18n\ValueObject\TranslationType;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -118,7 +119,30 @@ final class PublicContractConventionsTest extends TestCase
             static fn() => new UpdateDomainMetadataCommand(0, 'n'),
             static fn() => new CreateKeyCommand('s', 'd', ''),
             static fn() => new RenameKeyCommand(-1, 's', 'd', 'k'),
-            static fn() => new UpsertTranslationCommand('ar', 0, 'v'),
+            static fn() => new UpsertTranslationCommand(
+                languageCode: 'ar',
+                keyId: 0,
+                value: 'v',
+                type: null,
+            ),
+            static fn() => new UpsertTranslationCommand(
+                languageCode: 'ar',
+                keyId: 1,
+                value: 'v',
+                type: '',
+            ),
+            static fn() => new UpsertTranslationCommand(
+                languageCode: 'ar',
+                keyId: 1,
+                value: 'v',
+                type: " \t\n",
+            ),
+            static fn() => new UpsertTranslationCommand(
+                languageCode: 'ar',
+                keyId: 1,
+                value: 'v',
+                type: str_repeat('x', TranslationType::MAX_LENGTH + 1),
+            ),
             static fn() => new KeyListCriteria(' '),
             static fn() => new ScopeDomainListCriteria(''),
             static fn() => new DomainKeySummaryCriteria('s', 'd', ['']),
@@ -137,15 +161,38 @@ final class PublicContractConventionsTest extends TestCase
 
         // exact language-code contract is enforced by the translation command
         $this->expectException(InvalidLanguageCodeException::class);
-        new UpsertTranslationCommand(str_repeat('z', 17), 1, 'v');
+        new UpsertTranslationCommand(
+            languageCode: str_repeat('z', 17),
+            keyId: 1,
+            value: 'v',
+            type: null,
+        );
     }
 
     public function testAnEmptyTranslationValueAndTheNullScopeAreValid(): void
     {
-        $empty = new UpsertTranslationCommand('ar', 1, '');
+        $empty = new UpsertTranslationCommand(
+            languageCode: 'ar',
+            keyId: 1,
+            value: '',
+            type: null,
+        );
         self::assertSame('', $empty->value);
+        self::assertNull($empty->type);
 
-        $neutral = new UpsertTranslationCommand(null, 1, 'n');
+        $neutral = new UpsertTranslationCommand(
+            languageCode: null,
+            keyId: 1,
+            value: 'n',
+            type: null,
+        );
         self::assertNull($neutral->languageCode);
+        self::assertNull($neutral->type);
+    }
+
+    public function testTranslationTypeIsARequiredCommandArgument(): void
+    {
+        $constructor = new \ReflectionMethod(UpsertTranslationCommand::class, '__construct');
+        self::assertSame(4, $constructor->getNumberOfRequiredParameters());
     }
 }

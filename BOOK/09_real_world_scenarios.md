@@ -22,9 +22,24 @@ This chapter provides end-to-end usage examples for common requirements.
 
 3.  **Add Translations:** (Write Service)
     ```php
-    $writeService->upsertTranslation(new UpsertTranslationCommand('en-US', $keyId1, 'Dark Mode'));
-    $writeService->upsertTranslation(new UpsertTranslationCommand('en-US', $keyId2, 'On'));
-    $writeService->upsertTranslation(new UpsertTranslationCommand('en-US', $keyId3, 'Off'));
+    $writeService->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en-US',
+    keyId: $keyId1,
+    value: 'Dark Mode',
+    type: null,
+));
+    $writeService->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en-US',
+    keyId: $keyId2,
+    value: 'On',
+    type: null,
+));
+    $writeService->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en-US',
+    keyId: $keyId3,
+    value: 'Off',
+    type: null,
+));
     ```
 
 4.  **Runtime Usage:** (Read Service)
@@ -48,7 +63,8 @@ The Host owns the language list and the fallback rule. This module stores exact 
     $writeService->upsertTranslation(new UpsertTranslationCommand(
         languageCode: 'es-MX',
         keyId: $welcomeKeyId,
-        value: '¡Bienvenido a México!'
+        value: '¡Bienvenido a México!',
+        type: null,
     ));
     // Other keys are left empty for es-MX
     ```

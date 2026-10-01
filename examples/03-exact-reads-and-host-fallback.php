@@ -23,6 +23,7 @@ use Maatify\I18n\Management\Command\CreateDomainCommand;
 use Maatify\I18n\Management\Command\CreateKeyCommand;
 use Maatify\I18n\Management\Command\CreateScopeCommand;
 use Maatify\I18n\Management\Command\UpsertTranslationCommand;
+use Maatify\I18n\ValueObject\TranslationType;
 
 echo 'Example 03 - Exact reads and Host-owned fallback', PHP_EOL;
 
@@ -33,12 +34,40 @@ $core->assignments->assign('web', 'home');
 
 $title = $core->writer->createKey(new CreateKeyCommand('web', 'home', 'title'));
 $subtitle = $core->writer->createKey(new CreateKeyCommand('web', 'home', 'subtitle'));
+$richCopy = $core->writer->createKey(new CreateKeyCommand('web', 'home', 'rich-copy'));
 
-$core->writer->upsertTranslation(new UpsertTranslationCommand('en', $title, 'Welcome'));
-$core->writer->upsertTranslation(new UpsertTranslationCommand('ar-EG', $title, 'اهلا'));
-$core->writer->upsertTranslation(new UpsertTranslationCommand(null, $title, 'Neutral title'));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $title,
+    value: 'Welcome',
+    type: null,
+));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'ar-EG',
+    keyId: $title,
+    value: 'اهلا',
+    type: null,
+));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: null,
+    keyId: $title,
+    value: 'Neutral title',
+    type: null,
+));
 // An empty string is a real, authoritative value: it is NOT a missing translation.
-$core->writer->upsertTranslation(new UpsertTranslationCommand('fr', $subtitle, ''));
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'fr',
+    keyId: $subtitle,
+    value: '',
+    type: null,
+));
+$richMarkup = '<p>Formatted copy</p>';
+$core->writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $richCopy,
+    value: $richMarkup,
+    type: TranslationType::WYSIWYG,
+));
 
 // Exact semantics.
 example_expect('exact code', 'Welcome', $core->reader->getValue('en', 'web', 'home', 'title'));
@@ -46,9 +75,24 @@ example_expect('regional code does not fall back to its base', null, $core->read
 example_expect('codes are case-sensitive', null, $core->reader->getValue('EN', 'web', 'home', 'title'));
 example_expect('null reads the unlocalized scope only', 'Neutral title', $core->reader->getValue(null, 'web', 'home', 'title'));
 example_expect('empty string is authoritative', '', $core->reader->getValue('fr', 'web', 'home', 'subtitle'));
+example_expect('value-only read remains a string', 'Welcome', $core->reader->getValue('en', 'web', 'home', 'title'));
+example_expect(
+    'rich read returns the opaque value and its type',
+    ['value' => $richMarkup, 'type' => TranslationType::WYSIWYG],
+    $core->reader->getTranslation('en', 'web', 'home', 'rich-copy')?->jsonSerialize(),
+);
 example_expect('an unknown key is null', null, $core->reader->getValue('en', 'web', 'home', 'nope'));
 example_expect('an invalid code reads as null, not as an exception', null, $core->reader->getValue('   ', 'web', 'home', 'title'));
-example_expect('a bulk read returns only the exact scope', ['title' => 'Welcome'], $core->domainReader->getDomainValues('en', 'web', 'home')->all());
+example_expect(
+    'a bulk read returns only the exact scope',
+    ['rich-copy' => $richMarkup, 'title' => 'Welcome'],
+    $core->domainReader->getDomainValues('en', 'web', 'home')->all(),
+);
+example_expect(
+    'rich bulk read exposes type without interpreting content',
+    ['value' => $richMarkup, 'type' => TranslationType::WYSIWYG],
+    $core->domainReader->getDomainTranslations('en', 'web', 'home')->get('rich-copy')?->jsonSerialize(),
+);
 example_expect('a bulk read of an unknown domain is empty', [], $core->domainReader->getDomainValues('en', 'web', 'nope')->all());
 
 // Fallback is Host policy. This function is YOUR code, not part of I18n.

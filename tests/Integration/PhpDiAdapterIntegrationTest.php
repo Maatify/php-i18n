@@ -49,7 +49,12 @@ final class PhpDiAdapterIntegrationTest extends MysqlIntegrationTestCase
         self::assertInstanceOf(TranslationReadService::class, $reader);
 
         $keyId = $writer->createKey(new CreateKeyCommand('ct', 'home', 'title'));
-        $writer->upsertTranslation(new UpsertTranslationCommand('ar', $keyId, 'عنوان'));
+        $writer->upsertTranslation(new UpsertTranslationCommand(
+            languageCode: 'ar',
+            keyId: $keyId,
+            value: 'عنوان',
+            type: null,
+        ));
 
         self::assertSame('عنوان', $reader->getValue('ar', 'ct', 'home', 'title'));
         self::assertNull($reader->getValue('en', 'ct', 'home', 'title'));

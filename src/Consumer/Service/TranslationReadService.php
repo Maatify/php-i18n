@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Maatify\I18n\Consumer\Service;
 
+use Maatify\I18n\Consumer\DTO\TranslationValueDTO;
 use Maatify\I18n\Repository\TranslationKeyRepositoryInterface;
 use Maatify\I18n\Repository\TranslationRepositoryInterface;
 use Maatify\I18n\ValueObject\LanguageCode;
@@ -36,6 +37,21 @@ final readonly class TranslationReadService
         string $domain,
         string $key,
     ): ?string {
+        return $this->getTranslation($languageCode, $scope, $domain, $key)?->value;
+    }
+
+    /**
+     * Reads the value and optional type from one exact language scope.
+     *
+     * A missing row, unknown key, or invalid code returns null. The method
+     * does not apply language fallback or interpret the translation value.
+     */
+    public function getTranslation(
+        ?string $languageCode,
+        string $scope,
+        string $domain,
+        string $key,
+    ): ?TranslationValueDTO {
         try {
             $exactCode = LanguageCode::fromNullable($languageCode);
         } catch (InvalidLanguageCodeException) {
@@ -49,8 +65,11 @@ final readonly class TranslationReadService
             return null;
         }
 
-        return $this->translationRepository
-            ->getByLanguageAndKey($exactCode->value(), $translationKey->id)
-            ?->value;
+        $translation = $this->translationRepository
+            ->getByLanguageAndKey($exactCode->value(), $translationKey->id);
+
+        return $translation === null
+            ? null
+            : new TranslationValueDTO($translation->value, $translation->type);
     }
 }

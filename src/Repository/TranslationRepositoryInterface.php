@@ -18,10 +18,16 @@ use Maatify\I18n\DTO\TranslationUpsertResultDTO;
 interface TranslationRepositoryInterface
 {
     /**
-     * Inserts a translation or updates its existing value in the exact scope.
-     * Empty string is a stored value, not a deletion marker.
+     * Inserts or atomically updates the value and nullable type metadata in
+     * the exact scope. Type is not part of identity. Empty string is a stored
+     * value, not a deletion marker.
      */
-    public function upsert(?string $languageCode, int $keyId, string $value): TranslationUpsertResultDTO;
+    public function upsert(
+        ?string $languageCode,
+        int $keyId,
+        string $value,
+        ?string $type,
+    ): TranslationUpsertResultDTO;
 
     /** Returns null only when no translation row has this ID. */
     public function getById(int $id): ?TranslationDTO;

@@ -17,7 +17,7 @@ use PDO;
  */
 final readonly class MysqlTranslationRepository implements TranslationRepositoryInterface
 {
-    private const COLUMNS = 'id, key_id, language_code, value, created_at, updated_at';
+    private const COLUMNS = 'id, key_id, language_code, value, type, created_at, updated_at';
 
     private PdoGateway $gateway;
 
@@ -28,25 +28,31 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         $this->gateway = new PdoGateway($pdo);
     }
 
-    public function upsert(?string $languageCode, int $keyId, string $value): TranslationUpsertResultDTO
-    {
+    public function upsert(
+        ?string $languageCode,
+        int $keyId,
+        string $value,
+        ?string $type,
+    ): TranslationUpsertResultDTO {
         $stmt = $this->gateway->run(
-            'INSERT INTO maa_i18n_translations (language_code, key_id, value)
-             VALUES (:language_code, :key_id, :value)
+            'INSERT INTO maa_i18n_translations (language_code, key_id, value, type)
+             VALUES (:language_code, :key_id, :value, :type)
              ON DUPLICATE KEY UPDATE
                  id = LAST_INSERT_ID(id),
                  value = VALUES(value),
+                 type = VALUES(type),
                  updated_at = :now',
             ([
                 'language_code' => $languageCode,
                 'key_id' => $keyId,
                 'value' => $value,
+                'type' => $type,
                 'now' => $this->clock->now()->format('Y-m-d H:i:s'),
             ]),
             'translation.upsert',
         );
 
-        // rowCount() === 1 -> inserted; 2 -> updated; 0 -> same value re-written.
+        // rowCount() === 1 -> inserted; 2 -> updated; 0 -> unchanged upsert.
         return new TranslationUpsertResultDTO(
             $this->gateway->lastInsertId('translation.upsert'),
             $stmt->rowCount() === 1,
@@ -161,6 +167,7 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
             Row::int($row, 'key_id'),
             Row::nullableString($row, 'language_code'),
             Row::string($row, 'value'),
+            Row::nullableString($row, 'type'),
             Row::string($row, 'created_at'),
             Row::nullableString($row, 'updated_at'),
         );

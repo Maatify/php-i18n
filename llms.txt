@@ -21,3 +21,4 @@ This file is for an AI agent that consumes the package, not one that modifies it
 - [ARCHITECTURE.md](ARCHITECTURE.md): component boundaries and consistency model.
 - [BOOK/INDEX.md](BOOK/INDEX.md): conceptual documentation; the Package Reference prevails if they differ.
 - [dcos/ADR-019-host-owned-exact-language-code-in-i18n.md](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md): why language identity is Host-owned and exact.
+- [docs/decisions/DECISIONS_INDEX.md](docs/decisions/DECISIONS_INDEX.md): current decision discovery, including [ADR-020](docs/decisions/ADR-020-nullable-translation-type-metadata.md) for nullable translation type metadata and rich consumer reads.

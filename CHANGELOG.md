@@ -10,6 +10,7 @@ The package is in development and has not been published: there is no tag, relea
 
 ### Added
 
+- Nullable exact translation `type` metadata, the `wysiwyg` token, rich single/domain consumer reads, and an additive pre-S1 MySQL schema migration; value-only reads remain available.
 - Governed, structured translation keys (`scope.domain.key_part`) with scope, domain and assignment management.
 - Exact-scope translation values keyed by a Host-owned, nullable `language_code`; runtime reads never fall back.
 - Fail-soft runtime reads (`TranslationReadService`, `TranslationDomainReadService`) and fail-hard writes with a typed exception catalog.

@@ -12,17 +12,19 @@ How to integrate `maatify/php-i18n` into an application. This guide presents the
 
 - PHP `^8.4` with `ext-pdo`, `ext-pdo_mysql` and `ext-mbstring`;
 - a MySQL database and a `PDO` connection with `PDO::ERRMODE_EXCEPTION`;
-- the canonical schema applied once to a fresh database: [schema/schema.i18n.sql](../../schema/schema.i18n.sql) (it starts with `DROP TABLE IF EXISTS` for the seven `maa_i18n_*` tables, so never apply it over live data);
+- the canonical schema applied once to a fresh database: [schema/schema.i18n.sql](../../schema/schema.i18n.sql) (it starts with `DROP TABLE IF EXISTS` for the seven `maa_i18n_*` tables, so never apply it over live data). For an existing pre-S1 database, apply the additive [translation type migration](../../schema/migrations/2026-10-02-translation-type.sql) through your migration process;
 - a clock implementing `Maatify\SharedCommon\Contracts\ClockInterface` (for example `SystemClock`).
 
-**I18n does not:** own languages or locale selection, fall back to another language, cache, load files, delete keys, or ship migrations. All of that is yours ([Reference section 11](../../I18N_PACKAGE_REFERENCE.md#11-host-owned-responsibilities)).
+**I18n does not:** own languages or locale selection, fall back to another language, cache, load files, delete keys, or ship a migration framework. It ships the S1 schema migration asset; the Host controls when to apply it. ([Reference section 11](../../I18N_PACKAGE_REFERENCE.md#11-host-owned-responsibilities))
 
 **Primary calls:**
 
 | You want to | Call |
 |---|---|
 | read one value | `TranslationReadService::getValue()` |
+| read one value with its optional type | `TranslationReadService::getTranslation()` |
 | read a whole domain | `TranslationDomainReadService::getDomainValues()` |
+| read a whole domain with each row's optional type | `TranslationDomainReadService::getDomainTranslations()` |
 | define scopes, domains, assignments | the three governance management services |
 | create keys, write values | `TranslationWriteService` |
 | build an admin screen | `I18nManagementReadService` |
@@ -108,17 +110,27 @@ Also available: `updateMetadata`, `setActive`, `moveToPosition` (display order i
 ```php
 $keyId = $writer->createKey(new CreateKeyCommand('web', 'home', 'title', 'Home page title'));
 
-$writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome'));
-$writer->upsertTranslation(new UpsertTranslationCommand('ar', $keyId, 'مرحبا'));
-$writer->upsertTranslation(new UpsertTranslationCommand(null, $keyId, 'Neutral'));  // unlocalized scope
-$writer->upsertTranslation(new UpsertTranslationCommand('fr', $keyId, ''));         // authoritative empty value
+$writer->upsertTranslation(new UpsertTranslationCommand(languageCode: 'en', keyId: $keyId, value: 'Welcome', type: null));
+$writer->upsertTranslation(new UpsertTranslationCommand(languageCode: 'ar', keyId: $keyId, value: 'مرحبا', type: null));
+$writer->upsertTranslation(new UpsertTranslationCommand(languageCode: null, keyId: $keyId, value: 'Neutral', type: null));  // unlocalized scope
+$writer->upsertTranslation(new UpsertTranslationCommand(languageCode: 'fr', keyId: $keyId, value: '', type: null));         // authoritative empty value
+
+$richKeyId = $writer->createKey(new CreateKeyCommand('web', 'home', 'rich-copy'));
+$writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $richKeyId,
+    value: '<p>Formatted copy</p>',
+    type: TranslationType::WYSIWYG,
+));
 ```
+
+Every write supplies `type` explicitly. Use `null` for ordinary presentation and `TranslationType::WYSIWYG` when the consumer may choose rich-text handling. The Package stores the value as-is and does not render or sanitize its HTML.
 
 `renameKey` renames and/or moves a key and keeps its id and translations; `updateKeyDescription` changes the description; `deleteTranslation` removes one exact row. There is no key deletion. Failures are typed: `TranslationKeyAlreadyExistsException`, `ScopeNotAllowedException`, `DomainNotAllowedException`, `DomainScopeViolationException`, `TranslationKeyNotFoundException`, `InvalidLanguageCodeException` (full catalog: [Reference 6.2](../../I18N_PACKAGE_REFERENCE.md#62-exception-catalog)).
 
 ## 6. Read Translations
 
-**Input:** exact language code (or `null`), scope, domain, key. **Public call:** `getValue` / `getDomainValues`. **Result:** the exact string, `null`, or a DTO of values. **Boundary:** reads are fail-soft and never fall back.
+**Input:** exact language code (or `null`), scope, domain, key. **Public call:** `getValue` / `getTranslation` and `getDomainValues` / `getDomainTranslations`. **Result:** the exact string or value-only DTO, or a rich DTO containing both value and type. **Boundary:** reads are fail-soft and never fall back.
 
 ```php
 $reader->getValue('ar', 'web', 'home', 'title');          // 'مرحبا'
@@ -126,9 +138,13 @@ $reader->getValue('de', 'web', 'home', 'title');          // null: 'de' owns no 
 $reader->getValue('fr', 'web', 'home', 'title');          // '' : an empty value is a real value
 $reader->getValue(null, 'web', 'home', 'title');          // 'Neutral': the unlocalized scope only
 $reader->getValue('   ', 'web', 'home', 'title');         // null: an invalid code reads as a miss
+$reader->getTranslation('en', 'web', 'home', 'rich-copy'); // TranslationValueDTO: value + 'wysiwyg'
 
 $domainReader->getDomainValues('ar', 'web', 'home')->all();   // ['title' => 'مرحبا']
+$domainReader->getDomainTranslations('en', 'web', 'home')->get('rich-copy'); // value + type
 ```
+
+The value-only methods keep their existing result shapes. Rich reads distinguish a missing row (`null` from the single read or an absent domain key) from an existing row whose type is `null`. An empty value remains present. `wysiwyg` is an opaque consumer hint: escaping and sanitization for the output context remain consumer responsibilities.
 
 Rules to remember: codes are case-sensitive (`'ar'` is not `'AR'`); `'ar-EG'` does not fall back to `'ar'`; a bulk read of a domain that is not readable under the policy is empty.
 
@@ -145,7 +161,7 @@ $page = $managementRead->searchKeys(new KeyListCriteria(
 ));
 
 $grid = $managementRead->pageDomainTranslationGrid(new DomainTranslationGridCriteria('web', 'home', ['ar', 'fr']));
-// every key x every supplied code; a missing translation is a row with value === null
+// every key x every supplied code; existing rows include type, missing rows have null ID/value/type
 ```
 
 Details of identities (`getScope`, `getDomain`, `getKey` throw `*NotFoundException`), the available lists and their allowed sort keys are in [Reference 5.4](../../I18N_PACKAGE_REFERENCE.md#54-management-reads-managementservice).

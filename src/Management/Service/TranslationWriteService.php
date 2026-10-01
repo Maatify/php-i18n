@@ -173,6 +173,7 @@ final readonly class TranslationWriteService
                 $command->languageCode,
                 $command->keyId,
                 $command->value,
+                $command->type,
             );
 
             if ($result->id <= 0) {
