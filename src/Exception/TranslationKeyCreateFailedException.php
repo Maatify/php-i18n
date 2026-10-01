@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Maatify\I18n\Exception;
+
+use Maatify\Exceptions\Contracts\ErrorCodeInterface;
+use Maatify\I18n\Enum\I18nErrorCodeEnum;
+
+/**
+ * Raised when creating a translation key returns a storage failure state.
+ */
+final class TranslationKeyCreateFailedException extends I18nSystemException
+{
+    public function __construct(
+        string $scope,
+        string $domain,
+        string $key,
+    ) {
+        parent::__construct(
+            sprintf(
+                'Failed to create translation key [%s.%s.%s].',
+                $scope,
+                $domain,
+                $key,
+            ),
+        );
+    }
+
+    protected function defaultErrorCode(): ErrorCodeInterface
+    {
+        return I18nErrorCodeEnum::TRANSLATION_KEY_CREATE_FAILED;
+    }
+}

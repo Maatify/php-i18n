@@ -1,0 +1,21 @@
+# Repository-owned, disposable MySQL for the I18n Integration suite.
+# Driven exclusively by scripts/ci/run-phpunit-with-mysql.sh (composer test:integration).
+# No container_name, no named volumes, no fixed host port: isolation comes from
+# the per-run Compose project name and state lives on tmpfs.
+services:
+  mysql:
+    image: ${I18N_IT_MYSQL_IMAGE:-mysql:8.4.6}
+    environment:
+      # Temporary, non-production, generated per run by the orchestration script.
+      MYSQL_ROOT_PASSWORD: ${I18N_IT_DB_PASS:?set by scripts/ci/run-phpunit-with-mysql.sh}
+    ports:
+      # Loopback only, dynamic host port; the script discovers the effective endpoint.
+      - "127.0.0.1::3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysql -h127.0.0.1 -uroot -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+      start_period: 5s
