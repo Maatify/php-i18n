@@ -1,0 +1,11 @@
+parameters:
+    level: max
+    phpVersion: 80400
+    paths:
+        - src
+        - tests
+        - examples
+        - consumer-verification/bin
+    excludePaths:
+        analyse:
+            - vendor

@@ -1,0 +1,131 @@
+{
+    "name": "maatify/php-i18n",
+    "description": "Maatify I18n module: language-aware translation keys, values, scopes and governance.",
+    "keywords": [
+        "i18n",
+        "php",
+        "maatify"
+    ],
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Maatify",
+            "email": "support@maatify.dev",
+            "homepage": "https://maatify.dev"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Maatify\\I18n\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Maatify\\I18n\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "maatify/exceptions": "^1.1",
+        "maatify/persistence": "^1.4",
+        "maatify/shared-common": "^1.0",
+        "php": "^8.4"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "php-di/invoker": "^2.2",
+        "php-di/php-di": "^7.1",
+        "phpstan/phpstan": "^2.1.29",
+        "phpunit/phpunit": "^12.0",
+        "psr/container": "^1.1 || ^2.0"
+    },
+    "suggest": {
+        "php-di/php-di": "Required only to use the optional PHP-DI integration (Maatify\\I18n\\Adapter\\PhpDi\\I18nBindings). The core I18n runtime does not need it.",
+        "psr/container": "Required only together with php-di/php-di for the optional PHP-DI integration."
+    },
+    "scripts": {
+        "analyse": "phpstan analyse --configuration=phpstan.neon --memory-limit=1G --no-progress",
+        "test": [
+            "@test:unit",
+            "@test:integration"
+        ],
+        "test:unit": "phpunit --configuration phpunit.xml.dist --testsuite Unit",
+        "test:integration": "bash scripts/ci/run-phpunit-with-mysql.sh",
+        "check:composer": "@composer validate --strict",
+        "check:platform": "@composer check-platform-reqs",
+        "check:autoload": "bash scripts/ci/check-production-autoload.sh",
+        "check:syntax": "bash scripts/ci/check-php-syntax.sh",
+        "check:whitespace": "bash scripts/ci/check-whitespace.sh",
+        "check:docs": "bash scripts/ci/check-docs.sh",
+        "check:examples": "bash scripts/ci/run-examples.sh",
+        "check:audit": "bash scripts/ci/check-audit.sh",
+        "check:workflows": "bash scripts/ci/lint-workflows.sh",
+        "verify:consumer": "bash scripts/ci/run-consumer-verification.sh",
+        "verify:static": [
+            "@check:composer",
+            "@check:platform",
+            "@check:autoload",
+            "@check:syntax",
+            "@analyse",
+            "@check:style",
+            "@check:whitespace",
+            "@check:docs",
+            "@check:workflows"
+        ],
+        "verify": [
+            "@verify:static",
+            "@test",
+            "@check:examples",
+            "@verify:consumer",
+            "@check:audit"
+        ],
+        "check:style": "php-cs-fixer fix --dry-run --diff --using-cache=no --config=.php-cs-fixer.dist.php && php scripts/ci/test-per-cs-31.php && php scripts/ci/check-per-cs-31.php"
+    },
+    "config": {
+        "allow-plugins": false,
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "platform": {
+            "php": "8.4.0"
+        },
+        "policy": {
+            "advisories": {
+                "block": true,
+                "audit": "fail"
+            },
+            "malware": {
+                "block": true,
+                "block-scope": "all",
+                "audit": "fail"
+            },
+            "abandoned": {
+                "block": false,
+                "audit": "fail"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "analyse": "PHPStan level max over src, tests, examples and the consumer harness",
+        "test": "Unit suite, then the real-MySQL Integration suite",
+        "test:unit": "Unit suite (no Docker)",
+        "test:integration": "Integration suite inside the Package-owned disposable MySQL lifecycle (Docker Compose v2)",
+        "check:composer": "composer validate --strict",
+        "check:platform": "composer check-platform-reqs",
+        "check:autoload": "Strict optimized production autoload (--no-dev --strict-psr) and load of every src type",
+        "check:syntax": "php -l over every Package-owned PHP file",
+        "check:whitespace": "Trailing whitespace, CR and final-newline check over Package files",
+        "check:docs": "Documentation links, identity and release-claim consistency",
+        "check:examples": "Smoke-execute every example against the disposable MySQL",
+        "check:audit": "composer audit under the fail-closed dependency policy (needs Composer 2.10+)",
+        "check:workflows": "actionlint over every Host workflow (pinned, checksum-verified download; I18N_ACTIONLINT_USE_PATH=1 uses a local binary)",
+        "verify:consumer": "Consumer Verification Harness: two clean runs from a separate Composer root",
+        "verify:static": "Every local static, style, documentation, and workflow gate on the currently resolved dependency set",
+        "verify": "Canonical Package verification gate set on the currently installed or resolved dependency set; compatibility modes run separately",
+        "check:style": "Non-mutating PHP-FIG PER Coding Style 3.1 verification: pinned PER-CS 3.0 fixer rules plus repository-owned checks for every 3.1 delta"
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "name": "maatify/php-i18n-consumer-verification",
+    "description": "External-consumer verification harness for maatify/php-i18n (not a published package).",
+    "type": "project",
+    "license": "proprietary",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "..",
+            "options": {
+                "symlink": false,
+                "versions": {
+                    "maatify/php-i18n": "dev-consumer-verification"
+                }
+            }
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "maatify/php-i18n": "dev-consumer-verification"
+    },
+    "config": {
+        "allow-plugins": false,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
