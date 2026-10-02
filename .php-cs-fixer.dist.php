@@ -19,6 +19,8 @@ return (new Config())
     ->setRiskyAllowed(false)
     ->setRules([
         '@PER-CS3x0' => true,
+        // The supplemental PER-CS 3.1 verifier owns the full clear-comment contract.
+        'no_break_comment' => false,
         // PER-CS 3.1 forbids a multiline array's opening bracket on its own
         // line, even when that array is a later argument in a multiline call.
         // Keep the 3.0 fixer from restoring that now-invalid 3.0 arrangement;

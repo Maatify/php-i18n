@@ -338,12 +338,111 @@ switch ($value) {
 PHP,
         null,
     ],
+    'deliberate fall-through comment passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // Deliberate fall-through
+    case 2:
+        return;
+    default:
+        break;
+}
+PHP,
+        null,
+    ],
+    'intentional falls-through comment passes after case normalization' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // INTENTIONALLY   FALLS THROUGH
+    case 2:
+        return;
+    default:
+        break;
+}
+PHP,
+        null,
+    ],
+    'block fall-through comment passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        /* deliberate fall through */
+    case 2:
+        return;
+    default:
+        break;
+}
+PHP,
+        null,
+    ],
+    'falling-through comment passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // Falling through by design
+    case 2:
+        return;
+    default:
+        break;
+}
+PHP,
+        null,
+    ],
     'unmarked fall-through is rejected' => [
         <<<'PHP'
 <?php
 switch ($value) {
     case 1:
         recordValue();
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'unrelated TODO comment does not mark fall-through' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // TODO
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'handled-below comment does not mark fall-through' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // handled below
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'special-case comment does not mark fall-through' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // special case
     case 2:
         break;
 }
@@ -367,6 +466,17 @@ switch ($value) {
     default:
         recordValue();
         // no break
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'final deliberate fall-through marker without a following case is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    default:
+        recordValue();
+        // Deliberate fall-through
 }
 PHP,
         'every non-empty case must end with a terminating statement',

@@ -543,11 +543,36 @@ final class PerCs31SourceChecker
                 return false;
             }
 
-            // Match the default marker_text accepted by the active no_break_comment fixer.
-            return preg_match('~^((//|#)\\s*no break\\s*)|(/\\*\\*?\\s*no break(\\s+.*)*\\*/)$~i', $token[1]) === 1;
+            return self::isClearFallThroughComment($token[1]);
         }
 
         return false;
+    }
+
+    private static function isClearFallThroughComment(string $comment): bool
+    {
+        $content = preg_replace('/^\\s*(?:\\/\\/|#|\\/\\*+)|\\*\\/\\s*$/m', ' ', $comment) ?? $comment;
+        $content = preg_replace('/^\\s*\\*\\s?/m', ' ', $content) ?? $content;
+        $normalized = strtolower($content);
+        $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized) ?? $normalized;
+        $normalized = trim(preg_replace('/\\s+/', ' ', $normalized) ?? $normalized);
+
+        if (preg_match('/\\bno break\\b/', $normalized) === 1) {
+            return true;
+        }
+
+        $fallThrough = '(?:fall through|falls through|falling through)';
+        $negatedFallThrough = '/\\b(?:do not|don t|does not|doesn t|must not|should not|will not|never|avoid|prevent|not)'
+            . '(?:\\s+\\w+){0,2}\\s+\\b' . $fallThrough . '\\b/';
+        if (preg_match($negatedFallThrough, $normalized) === 1) {
+            return false;
+        }
+
+        $qualifier = '(?:intentional|intentionally|deliberate|deliberately)';
+        $clearFallThrough = '/\\b(?:' . $qualifier . '\\s+)?' . $fallThrough
+            . '(?:\\s+(?:' . $qualifier . '|on purpose|by design))?\\b/';
+
+        return preg_match($clearFallThrough, $normalized) === 1;
     }
 
     /** @param list<array{int, string, int}|string> $tokens */
