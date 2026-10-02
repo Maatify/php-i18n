@@ -80,7 +80,7 @@ $login = $typed->get('login.title'); // TranslationValueDTO: value + nullable ty
 *   Contains only values of the requested exact scope (no fallback values).
 *   Returns empty array `[]` if domain has no keys or is invalid.
 *   `getDomainValues()` remains value-only. `getDomainTranslations()` returns `key_part => TranslationValueDTO`; absent rows are omitted, while an existing row with an empty value remains present.
-*   The `wysiwyg` type is only a consumer hint. I18n does not trust, render or sanitize value content.
+*   Every non-null type is an opaque consumer-defined token. I18n does not define its vocabulary or assign behavior to it, and does not trust, render or sanitize value content.
 
 **Performance Note:**
 The current implementation iterates through keys and fetches translations individually (N+1 pattern). It is **strongly recommended** to wrap this service in a caching layer.

@@ -52,7 +52,6 @@ use Maatify\I18n\Service\I18nGovernancePolicyService;
 use Maatify\I18n\Service\MissingCounterService;
 use Maatify\Persistence\Pdo\Transaction\PdoTransactionRunner;
 use Maatify\SharedCommon\Infrastructure\SystemClock;
-use Maatify\I18n\ValueObject\TranslationType;
 
 $root = dirname(__DIR__);
 
@@ -292,11 +291,14 @@ try {
         static fn() => $writer->createKey(new CreateKeyCommand('web', 'home', 'title')),
     );
 
+    $consumerType = 'consumer.Custom-Type ';
+    $unlocalizedType = 'client.rich-copy';
+
     $writer->upsertTranslation(new UpsertTranslationCommand(
         languageCode: 'ar',
         keyId: $keyId,
         value: 'مرحبا',
-        type: TranslationType::WYSIWYG,
+        type: $consumerType,
     ));
     $writer->upsertTranslation(new UpsertTranslationCommand(
         languageCode: 'en',
@@ -314,7 +316,7 @@ try {
         languageCode: null,
         keyId: $keyId,
         value: 'neutral',
-        type: TranslationType::WYSIWYG,
+        type: $unlocalizedType,
     ));
     $writer->upsertTranslation(new UpsertTranslationCommand(
         languageCode: 'en',
@@ -336,8 +338,8 @@ try {
     same('exact missing: unknown key', null, $reader->getValue('ar', 'web', 'home', 'missing'));
     same('fail-soft: invalid code reads as missing', null, $reader->getValue('   ', 'web', 'home', 'title'));
     same(
-        'rich single read exposes the exact value and type',
-        ['value' => 'مرحبا', 'type' => TranslationType::WYSIWYG],
+        'rich single read preserves an exact consumer-defined token',
+        ['value' => 'مرحبا', 'type' => $consumerType],
         $reader->getTranslation('ar', 'web', 'home', 'title')?->jsonSerialize(),
     );
     same(
@@ -352,7 +354,7 @@ try {
     );
     same(
         'rich single read keeps the unlocalized scope exact',
-        ['value' => 'neutral', 'type' => TranslationType::WYSIWYG],
+        ['value' => 'neutral', 'type' => $unlocalizedType],
         $reader->getTranslation(null, 'web', 'home', 'title')?->jsonSerialize(),
     );
     same(
@@ -361,8 +363,8 @@ try {
         $domainReader->getDomainValues('ar', 'web', 'home')->all(),
     );
     same(
-        'typed bulk read exposes value and type',
-        ['value' => 'مرحبا', 'type' => TranslationType::WYSIWYG],
+        'typed bulk read preserves the consumer-defined token',
+        ['value' => 'مرحبا', 'type' => $consumerType],
         $domainReader->getDomainTranslations('ar', 'web', 'home')->get('title')?->jsonSerialize(),
     );
     same(
@@ -413,8 +415,8 @@ try {
     same(
         'persisted rows are exactly the four exact scopes',
         ([
-            ['language_code' => null, 'value' => 'neutral', 'type' => TranslationType::WYSIWYG],
-            ['language_code' => 'ar', 'value' => 'مرحبا', 'type' => TranslationType::WYSIWYG],
+            ['language_code' => null, 'value' => 'neutral', 'type' => $unlocalizedType],
+            ['language_code' => 'ar', 'value' => 'مرحبا', 'type' => $consumerType],
             ['language_code' => 'en', 'value' => 'Welcome back', 'type' => null],
             ['language_code' => 'fr', 'value' => '', 'type' => null],
         ]),
@@ -442,7 +444,7 @@ try {
     }
     ksort($gridValues);
     same('management read: grid marks a missing translation as null', ['ar' => 'مرحبا', 'de' => null], $gridValues);
-    same('management read: grid exposes persisted type', TranslationType::WYSIWYG, $gridTypes['ar']);
+    same('management read: grid exposes persisted consumer token', $consumerType, $gridTypes['ar']);
     same('management read: grid distinguishes missing row from nullable type', [null, null], [$gridIds['de'], $gridTypes['de']]);
 
     $languageRows = $managementRead->pageLanguageTranslationValues(new LanguageTranslationValuesCriteria('en'));
@@ -468,8 +470,8 @@ try {
     same('re-key: old code is empty afterwards', null, $reader->getValue('ar', 'web', 'home', 'title'));
     same('re-key: new code owns the value', 'مرحبا', $reader->getValue('ar-EG', 'web', 'home', 'title'));
     same(
-        're-key preserves the exact type',
-        ['value' => 'مرحبا', 'type' => TranslationType::WYSIWYG],
+        're-key preserves the exact consumer-defined token',
+        ['value' => 'مرحبا', 'type' => $consumerType],
         $reader->getTranslation('ar-EG', 'web', 'home', 'title')?->jsonSerialize(),
     );
     throws(

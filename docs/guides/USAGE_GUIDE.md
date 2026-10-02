@@ -120,11 +120,11 @@ $writer->upsertTranslation(new UpsertTranslationCommand(
     languageCode: 'en',
     keyId: $richKeyId,
     value: '<p>Formatted copy</p>',
-    type: TranslationType::WYSIWYG,
+    type: 'client.rich-copy', // Example token defined by this consumer; I18n assigns it no behavior.
 ));
 ```
 
-Every write supplies `type` explicitly. Use `null` for ordinary presentation and `TranslationType::WYSIWYG` when the consumer may choose rich-text handling. The Package stores the value as-is and does not render or sanitize its HTML.
+Every write supplies `type` explicitly. Use `null` when the consumer declares no type, or pass any valid consumer-defined token. `client.rich-copy` is only this example consumer's choice; the Package accepts valid tokens without a built-in vocabulary and stores the value and token as-is. It does not render or sanitize the value.
 
 `renameKey` renames and/or moves a key and keeps its id and translations; `updateKeyDescription` changes the description; `deleteTranslation` removes one exact row. There is no key deletion. Failures are typed: `TranslationKeyAlreadyExistsException`, `ScopeNotAllowedException`, `DomainNotAllowedException`, `DomainScopeViolationException`, `TranslationKeyNotFoundException`, `InvalidLanguageCodeException` (full catalog: [Reference 6.2](../../I18N_PACKAGE_REFERENCE.md#62-exception-catalog)).
 
@@ -138,13 +138,13 @@ $reader->getValue('de', 'web', 'home', 'title');          // null: 'de' owns no 
 $reader->getValue('fr', 'web', 'home', 'title');          // '' : an empty value is a real value
 $reader->getValue(null, 'web', 'home', 'title');          // 'Neutral': the unlocalized scope only
 $reader->getValue('   ', 'web', 'home', 'title');         // null: an invalid code reads as a miss
-$reader->getTranslation('en', 'web', 'home', 'rich-copy'); // TranslationValueDTO: value + 'wysiwyg'
+$reader->getTranslation('en', 'web', 'home', 'rich-copy'); // TranslationValueDTO: value + 'client.rich-copy'
 
 $domainReader->getDomainValues('ar', 'web', 'home')->all();   // ['title' => 'مرحبا']
 $domainReader->getDomainTranslations('en', 'web', 'home')->get('rich-copy'); // value + type
 ```
 
-The value-only methods keep their existing result shapes. Rich reads distinguish a missing row (`null` from the single read or an absent domain key) from an existing row whose type is `null`. An empty value remains present. `wysiwyg` is an opaque consumer hint: escaping and sanitization for the output context remain consumer responsibilities.
+The value-only methods keep their existing result shapes. Rich reads distinguish a missing row (`null` from the single read or an absent domain key) from an existing row whose type is `null`. An empty value remains present. Every non-null token is opaque and consumer-defined; I18n gives it no special meaning. Escaping and sanitization for the output context remain consumer responsibilities.
 
 Rules to remember: codes are case-sensitive (`'ar'` is not `'AR'`); `'ar-EG'` does not fall back to `'ar'`; a bulk read of a domain that is not readable under the policy is empty.
 

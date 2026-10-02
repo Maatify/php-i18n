@@ -88,11 +88,11 @@ The language is an exact, nullable, Host-owned `language_code` ([ADR-019](dcos/A
 
 ### 4.1 Nullable translation type (ADR-020)
 
-`type` is optional presentation metadata stored on each authoritative translation row. `NULL` means no specialized type is declared. A non-null type is stored exactly as supplied after validation: it must not be empty or whitespace-only and may contain at most 32 characters. The Package does not trim, lowercase or otherwise normalize it. `TranslationType::WYSIWYG` is the canonical `wysiwyg` token.
+`type` is optional metadata stored on each authoritative translation row. `NULL` means no type metadata is declared. Every valid non-null value is an exact, opaque, consumer-defined token: it must not be empty or whitespace-only and may contain at most 32 characters. The Package does not trim, lowercase or otherwise normalize it. Consumers define the meaning of their own tokens, such as `client.rich-copy`.
 
 The type is independent of `language_code`, translation identity, fallback and missing/completeness semantics. `language_code = NULL` remains the exact unlocalized scope; `value = ''` remains a present authoritative translation; an existing row with `type = NULL` is distinct from a missing row. Type-only updates do not change translated/missing counts, summary rows or key statistics. Language-code re-keying preserves the stored type.
 
-`wysiwyg` only tells a consumer it may choose rich-text presentation handling. Translation values remain opaque strings. I18n does not trust, render, sanitize or transform HTML, and consumers own output-context escaping and sanitization.
+The Package does not define, reserve, enumerate, whitelist, interpret, normalize or assign behavior to any `type` value. Translation values remain opaque strings. I18n does not trust, render, sanitize or transform HTML, and consumers own output-context escaping and sanitization.
 
 ## 5. Public Runtime API
 
@@ -270,7 +270,7 @@ All carry a `PageRequest $page = new PageRequest()`. Empty required codes throw 
 - `Enum\LockModeEnum`: `NONE`, `SHARE`, `UPDATE`; the row-lock mode of a repository locking read. Anything other than `NONE` requires an active transaction (otherwise a `LogicException` is thrown).
 - `Enum\I18nErrorCodeEnum`: the string error codes of the Package exceptions ([section 6.2](#62-exception-catalog)).
 - `ValueObject\LanguageCode`: `fromNullable(?string): self` (throws `InvalidLanguageCodeException`), `value(): ?string`, `isUnlocalized(): bool`, `identity(): string`, `MAX_LENGTH = 16`.
-- `ValueObject\TranslationType`: `fromNullable(?string): self` (throws `I18nInvalidArgumentException`), `value(): ?string`, `MAX_LENGTH = 32`, `WYSIWYG = 'wysiwyg'`; preserves the exact supplied token and does not interpret it.
+- `ValueObject\TranslationType`: `fromNullable(?string): self` (throws `I18nInvalidArgumentException`), `value(): ?string`, `MAX_LENGTH = 32`; validates only the technical token contract and preserves the exact supplied token.
 
 ### 5.11 Repository contracts, MySQL implementations and PHP-DI adapter
 

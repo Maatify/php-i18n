@@ -148,7 +148,7 @@ final class TranslationTypeMigrationTest extends TestCase
             'INSERT INTO maa_i18n_translations (key_id, language_code, value, type)
              VALUES (1, :language_code, :value, :type)',
         );
-        $write->execute(['language_code' => 'en', 'value' => '<p>opaque</p>', 'type' => 'wysiwyg']);
+        $write->execute(['language_code' => 'en', 'value' => '<p>opaque</p>', 'type' => 'client.rich-copy']);
         self::assertSame(3, (int) $pdo->lastInsertId());
 
         $readStatement = $pdo->query(
@@ -156,7 +156,7 @@ final class TranslationTypeMigrationTest extends TestCase
         );
         self::assertNotFalse($readStatement);
         self::assertSame(
-            ['value' => '<p>opaque</p>', 'type' => 'wysiwyg'],
+            ['value' => '<p>opaque</p>', 'type' => 'client.rich-copy'],
             $readStatement->fetch(PDO::FETCH_ASSOC),
         );
 

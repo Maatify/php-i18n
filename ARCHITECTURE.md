@@ -30,7 +30,7 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 *   **Purpose:** Text values, one row per exact `(key_id, language_code)`.
 *   **Columns:** `id`, `key_id` (FK -> maa_i18n_keys), `language_code` (`VARCHAR(16) NULL`, binary collation), `language_code_identity` (generated `COALESCE(language_code, '')`), `value`, nullable exact `type` (`VARCHAR(32)`, binary collation), `created_at`, `updated_at`.
 *   **Constraint:** Unique `(key_id, language_code_identity)` (NULL-safe); CHECK: `language_code` is NULL or non-empty/non-whitespace and <= 16 chars; `type` is NULL or non-empty/non-whitespace and <= 32 chars. `type` has no index and is not part of identity.
-*   **Semantics:** `NULL` language code = exact unlocalized scope; a code = exact scope of that code. `type` is opaque optional presentation metadata; `value` remains authoritative and is not interpreted. No fallback, default or wildcard. No FK/JOIN to any Host language table.
+*   **Semantics:** `NULL` language code = exact unlocalized scope; a code = exact scope of that code. `type` is optional opaque consumer-defined metadata; `value` remains authoritative and is not interpreted. No fallback, default or wildcard. No FK/JOIN to any Host language table.
 
 ### `maa_i18n_domain_language_summary`
 *   **Purpose:** Synchronous exact-scope aggregation (Derived, non-authoritative).

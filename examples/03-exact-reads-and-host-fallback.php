@@ -23,7 +23,6 @@ use Maatify\I18n\Management\Command\CreateDomainCommand;
 use Maatify\I18n\Management\Command\CreateKeyCommand;
 use Maatify\I18n\Management\Command\CreateScopeCommand;
 use Maatify\I18n\Management\Command\UpsertTranslationCommand;
-use Maatify\I18n\ValueObject\TranslationType;
 
 echo 'Example 03 - Exact reads and Host-owned fallback', PHP_EOL;
 
@@ -62,11 +61,12 @@ $core->writer->upsertTranslation(new UpsertTranslationCommand(
     type: null,
 ));
 $richMarkup = '<p>Formatted copy</p>';
+$richType = 'client.rich-copy'; // Consumer-defined opaque token; I18n assigns no behavior to it.
 $core->writer->upsertTranslation(new UpsertTranslationCommand(
     languageCode: 'en',
     keyId: $richCopy,
     value: $richMarkup,
-    type: TranslationType::WYSIWYG,
+    type: $richType,
 ));
 
 // Exact semantics.
@@ -78,7 +78,7 @@ example_expect('empty string is authoritative', '', $core->reader->getValue('fr'
 example_expect('value-only read remains a string', 'Welcome', $core->reader->getValue('en', 'web', 'home', 'title'));
 example_expect(
     'rich read returns the opaque value and its type',
-    ['value' => $richMarkup, 'type' => TranslationType::WYSIWYG],
+    ['value' => $richMarkup, 'type' => $richType],
     $core->reader->getTranslation('en', 'web', 'home', 'rich-copy')?->jsonSerialize(),
 );
 example_expect('an unknown key is null', null, $core->reader->getValue('en', 'web', 'home', 'nope'));
@@ -90,7 +90,7 @@ example_expect(
 );
 example_expect(
     'rich bulk read exposes type without interpreting content',
-    ['value' => $richMarkup, 'type' => TranslationType::WYSIWYG],
+    ['value' => $richMarkup, 'type' => $richType],
     $core->domainReader->getDomainTranslations('en', 'web', 'home')->get('rich-copy')?->jsonSerialize(),
 );
 example_expect('a bulk read of an unknown domain is empty', [], $core->domainReader->getDomainValues('en', 'web', 'nope')->all());

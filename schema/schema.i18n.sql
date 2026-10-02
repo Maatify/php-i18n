@@ -270,7 +270,7 @@ CREATE TABLE maa_i18n_translations (
         COMMENT 'Translated value; empty string is an authoritative empty translation',
     type VARCHAR(32)
         CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL
-        COMMENT 'Exact optional presentation type metadata; no rendering or sanitization (ADR-020)',
+        COMMENT 'Exact optional consumer-defined type metadata; no rendering or sanitization (ADR-020)',
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Creation timestamp',

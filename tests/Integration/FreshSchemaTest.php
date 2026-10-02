@@ -144,7 +144,7 @@ final class FreshSchemaTest extends MysqlIntegrationTestCase
         self::assertSame('32', self::text($column[0]['CHARACTER_MAXIMUM_LENGTH']));
         self::assertSame('utf8mb4', $column[0]['CHARACTER_SET_NAME']);
         self::assertSame('utf8mb4_bin', $column[0]['COLLATION_NAME']);
-        self::assertStringContainsString('optional presentation type metadata', self::text($column[0]['COLUMN_COMMENT']));
+        self::assertStringContainsString('optional consumer-defined type metadata', self::text($column[0]['COLUMN_COMMENT']));
         self::assertStringContainsString('ADR-020', self::text($column[0]['COLUMN_COMMENT']));
 
         $indexes = $this->rows(

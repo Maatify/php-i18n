@@ -83,7 +83,7 @@ $writer->upsertTranslation(new UpsertTranslationCommand(
     languageCode: 'en',
     keyId: $richKeyId,
     value: '<p>Formatted copy</p>',
-    type: \\Maatify\\I18n\\ValueObject\\TranslationType::WYSIWYG,
+    type: 'client.rich-copy', // A token defined by this consumer; I18n assigns it no behavior.
 ));
 
 $reader->getValue('en', 'web', 'home', 'title');   // 'Welcome'
@@ -113,7 +113,7 @@ An overview only. The complete inventory (signatures, DTO fields, exceptions, so
 
 - **Exact scope:** `getValue('ar', ...)` reads `ar` only. `null` reads the unlocalized scope only. A miss never retries elsewhere.
 - **Empty is a value:** the empty string is an authoritative translation, not a miss.
-- **Type is opaque metadata:** `null` means no specialized type; `wysiwyg` may guide consumer presentation. The Package does not render or sanitize values.
+- **Type is opaque metadata:** any valid non-null string is an exact consumer-defined token. The Package defines no type vocabulary and does not assign behavior, render or sanitize values.
 - **Codes are not normalized:** `'ar'` and `'AR'` are different; a code must be 1-16 characters and not whitespace-only. Whether a code is a real language is Host policy.
 - **Derived state:** summary tables are maintained inside the write transaction; `I18nStatsRebuilder::fullRebuild()` repairs drift.
 - **No caching, no key deletion, no fallback.**

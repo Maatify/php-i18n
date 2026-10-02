@@ -7,7 +7,7 @@ namespace Maatify\I18n\Consumer\DTO;
 use JsonSerializable;
 
 /**
- * Exact translation content and its optional, opaque presentation type.
+ * Exact translation content and its optional opaque consumer-defined type token.
  *
  * The consumer owns presentation handling; this DTO does not trust, render or
  * sanitize the value based on its type.

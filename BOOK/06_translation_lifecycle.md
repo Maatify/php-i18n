@@ -76,13 +76,13 @@ $translationId = $service->upsertTranslation(
     new UpsertTranslationCommand(languageCode: null, keyId: $keyId, value: 'Welcome', type: null)
 );
 
-// A consumer may choose rich-text presentation handling for this exact token.
+// This example consumer defines its own opaque type token.
 $translationId = $service->upsertTranslation(
     new UpsertTranslationCommand(
         languageCode: 'en-US',
         keyId: $keyId,
         value: '<p>Formatted copy</p>',
-        type: TranslationType::WYSIWYG,
+        type: 'client.rich-copy',
     )
 );
 ```
@@ -93,8 +93,8 @@ $translationId = $service->upsertTranslation(
 *   Synchronously refreshes the exact-scope summary row and the per-key counter if a new record is created.
 *   The language code is only checked against the storage contract (`InvalidLanguageCodeException`); I18n never looks the language up.
 *   `updated_at` timestamp is refreshed.
-*   `type` is required explicitly on every command: `null` means no specialized type, and `TranslationType::WYSIWYG` is the canonical `wysiwyg` token. It is stored atomically with `value` and never changes row identity or completeness counts.
-*   Type transitions (`null` to `wysiwyg` and back) update the existing translation row. The Package leaves `value` opaque and does not render or sanitize HTML; the consumer owns output handling.
+*   `type` is required explicitly on every command: `null` means no type metadata, and any valid non-null token is exact, opaque and consumer-defined. It is stored atomically with `value` and never changes row identity or completeness counts.
+*   Type transitions (`null` to a consumer-defined token and back) update the existing translation row. The Package leaves `value` opaque and does not render or sanitize it; the consumer owns output handling.
 
 ## 5. Deleting Translations
 

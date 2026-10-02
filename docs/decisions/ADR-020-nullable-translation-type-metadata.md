@@ -9,15 +9,15 @@
 
 ## Context
 
-Consumers need an optional signal for specialized translation presentation while the Package continues to store and return translation content as an opaque authoritative string. The signal must not alter the existing exact language scope, translation identity, fallback, or completeness contracts.
+Consumers need optional exact metadata stored beside a translation value. The Package stores and returns both without assigning meaning to the token or interpreting the opaque authoritative value. The metadata must not alter the existing exact language scope, translation identity, fallback, or completeness contracts.
 
 ## Decision
 
 Each translation row has nullable `type` metadata with this contract:
 
-- `NULL` means no specialized presentation type is declared.
-- A non-null type is an exact, non-empty, non-whitespace-only string of at most 32 characters. Validation does not trim, lowercase, or normalize it.
-- `TranslationType::WYSIWYG` is the canonical `wysiwyg` use case. It lets a consumer choose rich-text presentation handling; it does not establish that the value is safe HTML or prescribe a renderer or editor.
+- `NULL` means no type token is declared.
+- A non-null type is an exact, non-empty, non-whitespace-only, consumer-defined string of at most 32 characters. Validation does not trim, lowercase, or normalize it.
+- `type` is an exact opaque consumer-defined token. The Package does not define, reserve, enumerate, whitelist, interpret, normalize, or assign behavior to type values. A value such as `client.rich-copy` is only an example token chosen by a consumer.
 - `type` is stored atomically with `value` and is not part of translation identity, `language_code_identity`, fallback, missing-row semantics, or derived completeness counts.
 - `language_code = NULL` remains the exact unlocalized scope. `value = ''` remains an existing authoritative translation. A missing row remains distinct from an existing row whose `type` is `NULL`.
 - `TranslationDTO`, management translation-row reads, and the new rich consumer read methods expose `type`. The existing `getValue()` and `getDomainValues()` methods remain value-only compatibility APIs.
@@ -26,7 +26,7 @@ Each translation row has nullable `type` metadata with this contract:
 
 ## Rationale
 
-Keeping presentation metadata beside the translation value lets consumers select handling without encoding metadata into the value or language identity. Nullability preserves existing rows and callers that do not declare a specialized type. Keeping identity and completeness unchanged preserves established language-scope and derived-state behavior.
+Keeping consumer-defined metadata beside the translation value lets consumers retain their own meaning without encoding it into the value or language identity. Nullability preserves existing rows and callers that do not declare a token. Keeping identity and completeness unchanged preserves established language-scope and derived-state behavior.
 
 ## Consequences
 

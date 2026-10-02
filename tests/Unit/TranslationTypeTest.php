@@ -10,18 +10,17 @@ use PHPUnit\Framework\TestCase;
 
 final class TranslationTypeTest extends TestCase
 {
-    public function testNullAndWysiwygAreValidExactTypes(): void
+    public function testNullAndArbitraryConsumerDefinedTokensAreValid(): void
     {
         self::assertNull(TranslationType::fromNullable(null)->value());
-        self::assertSame('wysiwyg', TranslationType::WYSIWYG);
-        self::assertSame('wysiwyg', TranslationType::fromNullable(TranslationType::WYSIWYG)->value());
+        self::assertSame('client.rich-copy', TranslationType::fromNullable('client.rich-copy')->value());
     }
 
     public function testUnicodeLengthBoundaryAndInputArePreservedWithoutNormalization(): void
     {
         $thirtyTwoCharacters = str_repeat('界', TranslationType::MAX_LENGTH);
         self::assertSame($thirtyTwoCharacters, TranslationType::fromNullable($thirtyTwoCharacters)->value());
-        self::assertSame(' wysiwyg ', TranslationType::fromNullable(' wysiwyg ')->value());
+        self::assertSame(' Rich.Copy ', TranslationType::fromNullable(' Rich.Copy ')->value());
         self::assertSame("\0", TranslationType::fromNullable("\0")->value());
 
         $this->expectException(I18nInvalidArgumentException::class);

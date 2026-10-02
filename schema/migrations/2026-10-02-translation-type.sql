@@ -1,5 +1,5 @@
 /*
- * Add nullable exact translation presentation metadata (ADR-020).
+ * Add nullable exact consumer-defined translation type metadata (ADR-020).
  *
  * This additive migration targets the exact pre-S1 schema at
  * 2408e6266b61c3fe8d79bba0bff1296ef5881b2d. Existing rows receive NULL.
@@ -9,7 +9,7 @@
 ALTER TABLE maa_i18n_translations
     ADD COLUMN type VARCHAR(32)
         CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL
-        COMMENT 'Exact optional presentation type metadata; no rendering or sanitization (ADR-020)'
+        COMMENT 'Exact optional consumer-defined type metadata; no rendering or sanitization (ADR-020)'
         AFTER value,
     ADD CONSTRAINT chk_maa_i18n_translations_type
         CHECK (

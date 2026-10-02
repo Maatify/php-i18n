@@ -7,17 +7,15 @@ namespace Maatify\I18n\ValueObject;
 use Maatify\I18n\Exception\I18nInvalidArgumentException;
 
 /**
- * Exact nullable presentation metadata for a translation.
+ * Exact nullable consumer-defined type token for a translation.
  *
- * A non-null value is an opaque consumer hint. It is validated without
- * trimming or normalization, and does not describe how the Package renders
- * or sanitizes the translation value.
+ * A non-null value is an exact, opaque consumer-defined token. It is validated
+ * without trimming or normalization, and does not describe how the Package
+ * renders or sanitizes the translation value.
  */
 final readonly class TranslationType
 {
     public const MAX_LENGTH = 32;
-
-    public const WYSIWYG = 'wysiwyg';
 
     private function __construct(
         private ?string $type,

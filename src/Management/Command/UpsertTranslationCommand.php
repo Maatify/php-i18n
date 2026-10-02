@@ -13,8 +13,8 @@ use Maatify\I18n\ValueObject\TranslationType;
  * Intent: write the translation of one exact language scope of a key
  * (ADR-019). `languageCode === null` is the exact unlocalized scope; the code
  * is checked against the technical storage contract only. The empty string is
- * a valid, authoritative value. `type` is exact nullable presentation
- * metadata (ADR-020), independent of translation identity and value.
+ * a valid, authoritative value. `type` is an exact nullable consumer-defined
+ * token (ADR-020), independent of translation identity and value.
  */
 final readonly class UpsertTranslationCommand
 {
