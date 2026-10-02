@@ -82,14 +82,9 @@ $login = $typed->get('login.title'); // TranslationValueDTO: value + nullable ty
 *   `getDomainValues()` remains value-only. `getDomainTranslations()` returns `key_part => TranslationValueDTO`; absent rows are omitted, while an existing row with an empty value remains present.
 *   Every non-null type is an opaque consumer-defined token. I18n does not define its vocabulary or assign behavior to it, and does not trust, render or sanitize value content.
 
-**Performance Note:**
-The current implementation iterates through keys and fetches translations individually (N+1 pattern). It is **strongly recommended** to wrap this service in a caching layer.
+**Performance Guidance (non-normative):**
+The package does not cache reads. A Host that repeatedly reads the same domain may choose to cache bulk reads when appropriate. If the Host caches these results, it is responsible for invalidating them after writes through `TranslationWriteService`.
 
 ## 4. Caching Strategy
 
 The library implementation does **not** cache data. It queries the database directly.
-
-**Integration Requirement:**
-You **must** wrap `TranslationDomainReadService` in a caching layer (e.g., Redis).
-*   **Key Pattern:** `i18n:domain:{scope}:{domain}:{lang_code}`
-*   **Invalidation:** Must occur on `TranslationWriteService` upsert/delete.

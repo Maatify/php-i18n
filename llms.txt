@@ -1,6 +1,6 @@
 # Maatify I18n (maatify/php-i18n)
 
-> Governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft reads, management reads and operational facts. Language identity and fallback stay with the Host. Development state, unpublished, embedded Base Module.
+> Governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft reads, management reads and operational facts. Language identity and fallback stay with the Host. Standalone Composer package / standalone repository; development state, unpublished, with no released tag, GitHub Release or Packagist publication.
 
 This file is for an AI agent that consumes the package, not one that modifies it. The supported contract is what the linked consumer documents describe. Visible in the repository does not mean supported: do not treat `src/` internals, tests, fixtures, scripts, undocumented classes or methods, or internal engineering files as a consumer contract, and do not invent a contract the documents below do not state.
 

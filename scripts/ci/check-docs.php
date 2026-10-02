@@ -4,8 +4,8 @@
  * Documentation consistency gate for the Package consumer documents.
  *
  * 1. Every relative Markdown link (and #anchor into a Markdown file) resolves.
- * 2. No stale identity, release, Packagist, PHP-version, Host-name or
- *    removed-guide claim appears in the consumer documents.
+ * 2. No stale identity, release, Packagist, PHP-version, Host-name,
+ *    embedded-artifact or removed-guide claim appears in current consumer docs.
  * 3. `llms.txt` stays a navigation layer: one H1, a blockquote, link sections
  *    only, no copied contract.
  *
@@ -19,10 +19,17 @@ chdir($root);
 
 /** Consumer-facing documents (ADRs under dcos/ are historical decision records). */
 $documents = array_merge(
-    ['README.md', 'I18N_PACKAGE_REFERENCE.md', 'ARCHITECTURE.md', 'BOOK.md', 'CHANGELOG.md', 'llms.txt'],
+    ['README.md', 'I18N_PACKAGE_REFERENCE.md', 'ARCHITECTURE.md', 'CHANGELOG.md', 'llms.txt'],
     glob('docs/guides/*.md') ?: [],
     glob('BOOK/*.md') ?: [],
     glob('consumer-verification/*.md') ?: [],
+);
+
+/** Current consumer docs; historical ADRs under dcos/ are deliberately excluded. */
+$currentStateDocuments = array_merge(
+    ['README.md', 'I18N_PACKAGE_REFERENCE.md', 'ARCHITECTURE.md', 'llms.txt'],
+    glob('docs/guides/*.md') ?: [],
+    glob('BOOK/*.md') ?: [],
 );
 
 $errors = [];
@@ -96,6 +103,18 @@ foreach ($documents as $document) {
             $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
         }
     }
+
+    if (in_array($document, $currentStateDocuments, true)) {
+        $staleArtifactForm = [
+            '/Embedded Base Module/i' => 'stale embedded-artifact form claim in a standalone package',
+            '/Modules\/I18n\b/i' => 'stale embedded module path in a standalone package',
+        ];
+        foreach ($staleArtifactForm as $pattern => $reason) {
+            if (preg_match($pattern, $text, $m) === 1) {
+                $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
+            }
+        }
+    }
 }
 
 // Public Runtime API inventory closure: every type under src/ is either named in
@@ -162,15 +181,6 @@ if (file_exists('llms-full.txt')) {
 }
 if (file_exists('HOW_TO_USE.md')) {
     $errors[] = 'HOW_TO_USE.md must not exist (docs/guides/USAGE_GUIDE.md is the only Usage Guide)';
-}
-
-// Embedded Base Artifact: Host-governance files are not Artifact-owned.
-foreach (['SECURITY.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'composer.lock'] as $absent) {
-    $tracked = [];
-    exec('git ls-files --error-unmatch ' . escapeshellarg($absent) . ' 2>/dev/null', $tracked, $code);
-    if ($code === 0) {
-        $errors[] = $absent . ' must not be tracked inside the Artifact Root';
-    }
 }
 
 if ($errors !== []) {

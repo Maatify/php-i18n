@@ -4,7 +4,7 @@
 
 - **Upstream Repository:** Maatify/php-engineering-standards (https://github.com/Maatify/php-engineering-standards)
 - **Adoption Commit:** 5f872d3ef7da847cba3f82fee124a19c22f1c5c4
-- **Adoption Date / Metadata:** 2026-10-01 (upstream commit date); تعميم نموذج Release Preparation وفصل Publication State (#129)
+- **Adoption Date / Metadata:** 2026-10-01 (upstream commit date); generalization of the Release Preparation model and separation of Publication State (#129)
 - **Floating upstream reference used:** No
 
 ## Pinned Adoption Control Set
@@ -65,7 +65,7 @@ The frozen baseline for composer-package@3.0.0 and repository-governance@3.0.0 i
 
 - This repository is a standalone reusable PHP/Composer package with Composer identity maatify/php-i18n (composer.json).
 - The package owns SQL persistence behavior: PDO/MySQL repositories, schema/schema.i18n.sql, transaction and concurrency behavior, and real-MySQL integration tests.
-- The repository contains maintained PHP source, tests, documentation, and package verification/configuration surfaces. It currently has no .github/ directory or standalone GitHub CI workflows.
+- The repository contains maintained PHP source, tests, documentation, and package verification/configuration surfaces. At the S0 adoption baseline, the repository had no standalone GitHub CI workflow. Standalone CI was added later in the governed train.
 - The repository is package-only; it is not a deployable Host/Application or a Module scope, and it is not project-aware slim.
 
 ## Resolution and Closure
