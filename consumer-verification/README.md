@@ -14,7 +14,7 @@ A consumer that is **not** the package repository can install the package and us
 
 ## Run it
 
-From the package root (`Modules/I18n`), with Docker Compose v2 available:
+From the standalone package repository root, with Docker Compose v2 available:
 
 ```bash
 composer verify:consumer
