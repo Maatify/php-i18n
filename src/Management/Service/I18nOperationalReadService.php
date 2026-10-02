@@ -10,6 +10,7 @@ use Maatify\I18n\DTO\I18nStatCountDTO;
 use Maatify\I18n\DTO\ScopeKeyCoverageDTO;
 use Maatify\I18n\Exception\I18nInvalidArgumentException;
 use Maatify\I18n\Repository\I18nOperationalStatsRepositoryInterface;
+use Maatify\I18n\ValueObject\LanguageCode;
 
 /**
  * Operational Read surface: Package-owned counts and coverage facts.
@@ -55,11 +56,20 @@ final readonly class I18nOperationalReadService
     }
 
     /**
+     * Reads per-domain coverage for one exact, technically valid language code.
+     * The code is passed unchanged; language semantics remain Host-owned.
+     *
      * @return list<DomainCoverageDTO>
+     * @throws I18nInvalidArgumentException when languageCode is empty,
+     *     whitespace-only, or longer than LanguageCode::MAX_LENGTH
      */
     public function domainCoverage(string $scopeCode, string $languageCode): array
     {
-        if ($languageCode === '') {
+        if (LanguageCode::tryFromNullable($languageCode) === null) {
+            if (mb_strlen($languageCode) > LanguageCode::MAX_LENGTH) {
+                throw I18nInvalidArgumentException::tooLong('languageCode', LanguageCode::MAX_LENGTH);
+            }
+
             throw I18nInvalidArgumentException::emptyField('languageCode');
         }
 

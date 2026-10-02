@@ -135,7 +135,10 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         return $this->gateway->lastInsertId('scope.create');
     }
 
-    public function updateMetadata(UpdateScopeMetadataCommand $command): void
+    /**
+     * @return bool whether the SQL update changed a scope row
+     */
+    public function updateMetadata(UpdateScopeMetadataCommand $command): bool
     {
         $fields = [];
         $params = ['id' => $command->id];
@@ -150,20 +153,23 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
             $params['description'] = $command->description;
         }
 
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_scopes SET ' . implode(', ', $fields) . ' WHERE id = :id',
             $params,
             'scope.updateMetadata',
-        );
+        ) > 0;
     }
 
-    public function setActive(int $id, bool $isActive): void
+    /**
+     * @return bool whether the SQL update changed a scope row
+     */
+    public function setActive(int $id, bool $isActive): bool
     {
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_scopes SET is_active = :is_active WHERE id = :id',
             ['id' => $id, 'is_active' => $isActive ? 1 : 0],
             'scope.setActive',
-        );
+        ) > 0;
     }
 
     public function changeCode(int $id, string $newCode): void

@@ -7,6 +7,7 @@ namespace Maatify\I18n\Service;
 use Maatify\I18n\Repository\DomainLanguageSummaryRepositoryInterface;
 use Maatify\I18n\Repository\KeyStatsRepositoryInterface;
 use Maatify\I18n\Repository\TranslationKeyRepositoryInterface;
+use Maatify\I18n\Exception\I18nInvalidArgumentException;
 use Maatify\I18n\Exception\TranslationKeyNotFoundException;
 
 /**
@@ -25,9 +26,12 @@ final readonly class MissingCounterService
      * row. A missing key is a not-found error.
      *
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function onKeyCreated(int $keyId): void
     {
+        $this->assertPositiveKeyId($keyId);
+
         $key = $this->keyRepository->getById($keyId);
 
         if ($key === null) {
@@ -46,10 +50,14 @@ final readonly class MissingCounterService
 
     /**
      * Removes the key from derived summaries and stats; a missing key is a
-     * fail-soft no-op.
+     * fail-soft no-op. keyId must be positive.
+     *
+     * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function onKeyDeleted(int $keyId): void
     {
+        $this->assertPositiveKeyId($keyId);
+
         $key = $this->keyRepository->getById($keyId);
 
         if ($key === null) {
@@ -68,14 +76,17 @@ final readonly class MissingCounterService
 
     /**
      * Recomputes the exact-scope summary and increments the key's translated
-     * count. A missing key is a not-found error.
+     * count. A missing key is a not-found error. keyId must be positive.
      *
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function onTranslationCreated(
         ?string $languageCode,
         int $keyId,
     ): void {
+        $this->assertPositiveKeyId($keyId);
+
         $key = $this->keyRepository->getById($keyId);
 
         if ($key === null) {
@@ -95,12 +106,16 @@ final readonly class MissingCounterService
 
     /**
      * Recomputes the exact-scope summary and decrements the key's translated
-     * count; a missing key is a fail-soft no-op.
+     * count; a missing key is a fail-soft no-op. keyId must be positive.
+     *
+     * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function onTranslationDeleted(
         ?string $languageCode,
         int $keyId,
     ): void {
+        $this->assertPositiveKeyId($keyId);
+
         $key = $this->keyRepository->getById($keyId);
 
         if ($key === null) {
@@ -141,5 +156,15 @@ final readonly class MissingCounterService
     ): void {
         $this->summaryRepository->rebuildScopeDomain($oldScope, $oldDomain);
         $this->summaryRepository->rebuildScopeDomain($newScope, $newDomain);
+    }
+
+    /**
+     * @throws I18nInvalidArgumentException when keyId is not positive
+     */
+    private function assertPositiveKeyId(int $keyId): void
+    {
+        if ($keyId <= 0) {
+            throw I18nInvalidArgumentException::notPositive('keyId');
+        }
     }
 }

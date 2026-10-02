@@ -116,7 +116,10 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         }
     }
 
-    public function unassign(string $scopeCode, string $domainCode): int
+    /**
+     * @return bool whether the exact assignment row was deleted
+     */
+    public function unassign(string $scopeCode, string $domainCode): bool
     {
         return $this->gateway->write(
             'DELETE FROM maa_i18n_domain_scopes
@@ -124,7 +127,7 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
                AND domain_code = :domain_code',
             ['scope_code' => $scopeCode, 'domain_code' => $domainCode],
             'domainScope.unassign',
-        );
+        ) > 0;
     }
 
     private function lockSuffix(LockModeEnum $lock): string

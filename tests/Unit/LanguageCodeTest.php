@@ -31,6 +31,19 @@ final class LanguageCodeTest extends TestCase
         self::assertSame(str_repeat('a', 16), LanguageCode::fromNullable(str_repeat('a', 16))->value());
     }
 
+    public function testTryFactoryPreservesValidExactCodesAndUsesNullForInvalidCodes(): void
+    {
+        self::assertSame('ar-EG', LanguageCode::tryFromNullable('ar-EG')?->value());
+        self::assertSame('AR', LanguageCode::tryFromNullable('AR')?->value());
+        self::assertSame('custom.CODE', LanguageCode::tryFromNullable('custom.CODE')?->value());
+        self::assertInstanceOf(LanguageCode::class, LanguageCode::tryFromNullable(null));
+        self::assertNull(LanguageCode::tryFromNullable(null)->value());
+
+        foreach (['', " \t\n", str_repeat('a', 17)] as $invalid) {
+            self::assertNull(LanguageCode::tryFromNullable($invalid));
+        }
+    }
+
     /**
      * @return array<string, array{string}>
      */

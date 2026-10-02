@@ -139,24 +139,8 @@ final class TranslationTypeLifecycleTest extends MysqlIntegrationTestCase
      */
     private static function selectRows(PDOStatement $statement): array
     {
-        $rows = [];
-        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            if (!is_array($row)) {
-                throw new \UnexpectedValueException('PDO returned a non-row result.');
-            }
-
-            $typedRow = [];
-            foreach ($row as $key => $value) {
-                if (!is_string($key)) {
-                    throw new \UnexpectedValueException('PDO returned a row with a non-string column name.');
-                }
-
-                $typedRow[$key] = $value;
-            }
-
-            $rows[] = $typedRow;
-        }
-
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $statement->fetchAll(\PDO::FETCH_ASSOC);
         return $rows;
     }
 }

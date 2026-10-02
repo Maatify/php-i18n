@@ -50,11 +50,19 @@ interface ScopeRepositoryInterface
      */
     public function create(CreateScopeCommand $command, int $sortOrder): int;
 
-    /** Applies only the metadata fields supplied by the command. */
-    public function updateMetadata(UpdateScopeMetadataCommand $command): void;
+    /**
+     * Applies only the metadata fields supplied by the command.
+     *
+     * @return bool whether the stored row changed
+     */
+    public function updateMetadata(UpdateScopeMetadataCommand $command): bool;
 
-    /** Persists the scope's active state. */
-    public function setActive(int $id, bool $isActive): void;
+    /**
+     * Persists the scope's active state.
+     *
+     * @return bool whether the stored row changed
+     */
+    public function setActive(int $id, bool $isActive): bool;
 
     /**
      * @throws ScopeAlreadyExistsException on a duplicate code

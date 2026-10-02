@@ -98,6 +98,7 @@ final class TranslationTypeMigrationTest extends TestCase
              FROM maa_i18n_translations ORDER BY id',
         );
         self::assertNotFalse($rowsStatement);
+        /** @var list<array<string, mixed>> $rows */
         $rows = $rowsStatement->fetchAll(PDO::FETCH_ASSOC);
         self::assertSame([[
             'id' => 1,
@@ -120,6 +121,7 @@ final class TranslationTypeMigrationTest extends TestCase
 
         $tablesStatement = $pdo->query('SHOW TABLES');
         self::assertNotFalse($tablesStatement);
+        /** @var list<string> $tables */
         $tables = $tablesStatement->fetchAll(PDO::FETCH_COLUMN);
         self::assertCount(7, $tables);
 
@@ -130,6 +132,7 @@ final class TranslationTypeMigrationTest extends TestCase
              ORDER BY SEQ_IN_INDEX",
         );
         self::assertNotFalse($identityStatement);
+        /** @var list<string> $identity */
         $identity = $identityStatement->fetchAll(PDO::FETCH_COLUMN);
         self::assertSame(['key_id', 'language_code_identity'], $identity);
 
@@ -138,6 +141,7 @@ final class TranslationTypeMigrationTest extends TestCase
              WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL ORDER BY TABLE_NAME",
         );
         self::assertNotFalse($foreignKeyStatement);
+        /** @var list<array{TABLE_NAME: string, REFERENCED_TABLE_NAME: string}> $foreignKeys */
         $foreignKeys = $foreignKeyStatement->fetchAll(PDO::FETCH_ASSOC);
         self::assertSame([
             ['TABLE_NAME' => 'maa_i18n_key_stats', 'REFERENCED_TABLE_NAME' => 'maa_i18n_keys'],
@@ -155,9 +159,11 @@ final class TranslationTypeMigrationTest extends TestCase
             'SELECT value, type FROM maa_i18n_translations WHERE id = 3',
         );
         self::assertNotFalse($readStatement);
+        /** @var array<string, mixed>|false $row */
+        $row = $readStatement->fetch(PDO::FETCH_ASSOC);
         self::assertSame(
             ['value' => '<p>opaque</p>', 'type' => 'client.rich-copy'],
-            $readStatement->fetch(PDO::FETCH_ASSOC),
+            $row,
         );
 
         foreach (['', ' ', "\t\n", "\x0B\x0C", "\u{0085}", "\u{00A0}", "\u{2028}", str_repeat('x', 33)] as $invalidType) {

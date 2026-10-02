@@ -66,7 +66,9 @@ final readonly class I18nScopeDomainManagementService
                 throw new DomainScopeNotAssignedException($scopeCode, $domainCode);
             }
 
-            $this->domainScopes->unassign($scopeCode, $domainCode);
+            if (!$this->domainScopes->unassign($scopeCode, $domainCode)) {
+                throw new DomainScopeNotAssignedException($scopeCode, $domainCode);
+            }
         });
     }
 

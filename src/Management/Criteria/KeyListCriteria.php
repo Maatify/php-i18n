@@ -14,7 +14,8 @@ use Maatify\Persistence\Pdo\Pagination\PageRequest;
 final readonly class KeyListCriteria
 {
     /**
-     * Rejects an empty or whitespace-only scope code before a query is run.
+     * Rejects an empty or whitespace-only scope code and non-positive IDs
+     * before a query is run.
      *
      * @throws I18nInvalidArgumentException
      */
@@ -28,6 +29,10 @@ final readonly class KeyListCriteria
     ) {
         if (trim($scopeCode) === '') {
             throw I18nInvalidArgumentException::emptyField('scopeCode');
+        }
+
+        if ($id !== null && $id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
         }
     }
 }

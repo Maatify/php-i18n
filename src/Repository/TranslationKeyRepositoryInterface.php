@@ -35,8 +35,12 @@ interface TranslationKeyRepositoryInterface
         string $key,
     ): ?TranslationKeyDTO;
 
-    /** Replaces or clears the key description for the given key ID. */
-    public function updateDescription(int $id, ?string $description): void;
+    /**
+     * Replaces or clears the key description for the given key ID.
+     *
+     * @return bool whether the stored row changed
+     */
+    public function updateDescription(int $id, ?string $description): bool;
 
     /**
      * @throws TranslationKeyAlreadyExistsException on a duplicate identity

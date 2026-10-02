@@ -93,13 +93,16 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         return $row === null ? null : $this->map($row);
     }
 
-    public function updateDescription(int $id, ?string $description): void
+    /**
+     * @return bool whether the SQL update changed a key row
+     */
+    public function updateDescription(int $id, ?string $description): bool
     {
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_keys SET description = :description WHERE id = :id',
             ['id' => $id, 'description' => $description],
             'key.updateDescription',
-        );
+        ) > 0;
     }
 
     public function rename(RenameKeyCommand $command): void

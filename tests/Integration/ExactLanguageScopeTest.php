@@ -127,8 +127,16 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
             }
         }
 
-        // Reads are fail-soft for an invalid code.
-        self::assertNull($this->reader->getValue('', 'ct', 'home', 'title'));
+        // Reads remain fail-soft for every invalid technical code.
+        foreach (['', '   ', "\t\n", str_repeat('x', 17)] as $bad) {
+            self::assertNull($this->reader->getValue($bad, 'ct', 'home', 'title'));
+            self::assertNull($this->reader->getTranslation($bad, 'ct', 'home', 'title'));
+            self::assertSame([], $this->domainReader->getDomainValues($bad, 'ct', 'home')->values);
+            self::assertSame([], $this->domainReader->getDomainTranslations($bad, 'ct', 'home')->translations);
+        }
+
+        self::assertSame([], $this->domainReader->getDomainValues('ar', 'missing', 'missing')->values);
+        self::assertSame([], $this->domainReader->getDomainTranslations('ar', 'missing', 'missing')->translations);
         self::assertSame(0, $this->scalarInt('SELECT COUNT(*) FROM maa_i18n_translations'));
     }
 

@@ -101,6 +101,8 @@ final readonly class PdoGateway
     public function exists(string $sql, array $params, string $operation): bool
     {
         $stmt = $this->run($sql, $params, $operation);
+
+        /** @var array<int, mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_NUM);
 
         if ($row === false) {

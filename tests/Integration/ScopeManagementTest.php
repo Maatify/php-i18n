@@ -60,7 +60,9 @@ final class ScopeManagementTest extends MysqlIntegrationTestCase
         self::assertNotFalse($stmt);
 
         $positions = [];
-        foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $value) {
+        /** @var list<int|string> $values */
+        $values = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        foreach ($values as $value) {
             $positions[] = is_numeric($value) ? (int) $value : -1;
         }
 

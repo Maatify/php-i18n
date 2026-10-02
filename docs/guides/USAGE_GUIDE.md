@@ -130,7 +130,7 @@ Every write supplies `type` explicitly. Use `null` when the consumer declares no
 
 ## 6. Read Translations
 
-**Input:** exact language code (or `null`), scope, domain, key. **Public call:** `getValue` / `getTranslation` and `getDomainValues` / `getDomainTranslations`. **Result:** the exact string or value-only DTO, or a rich DTO containing both value and type. **Boundary:** reads are fail-soft and never fall back.
+**Input:** exact language code (or `null`), scope, domain, key. **Public call:** `getValue` / `getTranslation` and `getDomainValues` / `getDomainTranslations`. **Result:** the exact string or value-only DTO, or a rich DTO containing both value and type. **Boundary:** invalid codes and misses are fail-soft, reads never fall back, and storage failures propagate.
 
 ```php
 $reader->getValue('ar', 'web', 'home', 'title');          // 'مرحبا'
