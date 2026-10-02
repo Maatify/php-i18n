@@ -557,15 +557,27 @@ final class PerCs31SourceChecker
         $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized) ?? $normalized;
         $normalized = trim(preg_replace('/\\s+/', ' ', $normalized) ?? $normalized);
 
-        if (preg_match('/\\bno break\\b/', $normalized) === 1) {
-            return true;
+        $fallThrough = '(?:fall through|falls through|falling through)';
+        $negativePatterns = [
+            '/\\b(?:(?:a|an|the)\\s+)?(?:accidental(?:ly)?|unintended|unintentional(?:ly)?)\\s+'
+                . $fallThrough . '\\b/',
+            '/\\bno\\s+' . $fallThrough . '\\b/',
+            '/\\b(?:never|avoid|prevent|do not|does not|should not|must not|will not|don t|doesn t|shouldn t|mustn t|not)'
+                . '(?:\\s+\\w+){0,2}\\s+\\b' . $fallThrough . '\\b/',
+            '/\\b' . $fallThrough . '\\s+(?:should|must|do|does|will)\\s+not\\b/',
+            '/\\b' . $fallThrough . '\\s+(?:(?:is|was|would be)\\s+)?(?:an?\\s+)?(?:bug|error|mistake)\\b/',
+            '/\\b' . $fallThrough . '\\s+(?:(?:is|was)\\s+)?(?:accidental(?:ly)?|unintended|unintentional(?:ly)?)\\b/',
+            '/\\b' . $fallThrough . '\\s+(?:is|was)\\s+not\\s+(?:intentional|deliberate|intended|allowed|desired)\\b/',
+            '/\\b' . $fallThrough . '\\s+by\\s+mistake\\b/',
+        ];
+        foreach ($negativePatterns as $negativePattern) {
+            if (preg_match($negativePattern, $normalized) === 1) {
+                return false;
+            }
         }
 
-        $fallThrough = '(?:fall through|falls through|falling through)';
-        $negatedFallThrough = '/\\b(?:do not|don t|does not|doesn t|must not|should not|will not|never|avoid|prevent|not)'
-            . '(?:\\s+\\w+){0,2}\\s+\\b' . $fallThrough . '\\b/';
-        if (preg_match($negatedFallThrough, $normalized) === 1) {
-            return false;
+        if (preg_match('/\\bno break\\b/', $normalized) === 1) {
+            return true;
         }
 
         $qualifier = '(?:intentional|intentionally|deliberate|deliberately)';
