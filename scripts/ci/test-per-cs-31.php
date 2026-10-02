@@ -338,6 +338,58 @@ switch ($value) {
 PHP,
         null,
     ],
+    'no-break marker by design passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break by design
+    case 2:
+        return;
+}
+PHP,
+        null,
+    ],
+    'deliberate no-break marker passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // deliberate no break
+    case 2:
+        return;
+}
+PHP,
+        null,
+    ],
+    'bare fall-through marker passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // fall through
+    case 2:
+        return;
+}
+PHP,
+        null,
+    ],
+    'intentional fall-through marker passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // intentional fall through
+    case 2:
+        return;
+}
+PHP,
+        null,
+    ],
     'deliberate fall-through comment passes' => [
         <<<'PHP'
 <?php
@@ -508,6 +560,175 @@ switch ($value) {
     case 1:
         recordValue();
         // no fall through
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break explicitly described as unintended is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break is unintended
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break explicitly described as unintentional is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break is unintentional
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break explicitly described as accidental is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break was accidental
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break explicitly described as a mistake is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break by mistake
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break explicitly described as not intentional is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break is not intentional
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break explicitly described as not deliberate is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break is not deliberate
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'no-break that should never happen is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break should never happen
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'fall-through explicitly described as not intentional is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // fall through not intentional
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'fall-through may be a bug is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // fall through may be a bug
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'fall-through could be accidental is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // fall through could be accidental
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'maybe fall-through is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // maybe fall through
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'fall-through that is never deliberate is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // fall through is never deliberate
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'fall-through that should be avoided is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // fall through should be avoided
     case 2:
         break;
 }
