@@ -158,7 +158,7 @@ Six maintained examples cover every material capability and run against a dispos
 
 ## Development and Testing
 
-Every CI gate invokes a local command from the standalone repository root, so each can be reproduced locally with the same verification contract. Prerequisites: PHP 8.4+, Composer, and, for the real-MySQL gates, Docker with Compose v2. `composer check:audit` needs Composer 2.10 or newer (a verification-time capability, not a consumer requirement). The disposable MySQL is defined once in [docker/mysql-integration/compose.yaml](docker/mysql-integration/compose.yaml) and driven by [scripts/ci/with-mysql.sh](scripts/ci/with-mysql.sh); Integration, examples and the consumer harness all reuse it, with run-scoped temporary credentials and teardown.
+Every CI gate invokes a local command from the standalone repository root, so each can be reproduced locally with the same verification contract. Prerequisites: PHP 8.4+, Composer, `actionlint` available on PATH for `composer check:workflows`, and, for the real-MySQL gates, Docker with Compose v2. `composer check:audit` needs Composer 2.10 or newer (a verification-time capability, not a consumer requirement). The disposable MySQL is defined once in [docker/mysql-integration/compose.yaml](docker/mysql-integration/compose.yaml) and driven by [scripts/ci/with-mysql.sh](scripts/ci/with-mysql.sh); Integration, examples and the consumer harness all reuse it, with run-scoped temporary credentials and teardown.
 
 ```bash
 composer install
