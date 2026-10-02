@@ -209,7 +209,18 @@ final readonly class TranslationWriteService
     }
 
     /**
+     * Delete the translation from its exact nullable language scope; null is
+     * unlocalized and a non-null code is technically validated without
+     * normalization. A non-positive key ID raises
+     * I18nInvalidArgumentException, an invalid code raises
+     * InvalidLanguageCodeException, and a missing key raises
+     * TranslationKeyNotFoundException. A missing exact translation is a
+     * successful no-op; when a row is deleted, derived counters are updated in
+     * the same transaction.
+     *
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
+     * @throws \Maatify\I18n\Exception\InvalidLanguageCodeException
      */
     public function deleteTranslation(
         ?string $languageCode,

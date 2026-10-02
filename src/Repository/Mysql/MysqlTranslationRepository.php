@@ -28,6 +28,12 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         $this->gateway = new PdoGateway($pdo);
     }
 
+    /**
+     * Insert or update the exact nullable language scope (`null` is
+     * unlocalized), with no fallback or normalization, writing value and type
+     * together; type is not identity and an empty value remains stored. The
+     * result ID identifies the row and `created` is true only for an insert.
+     */
     public function upsert(
         ?string $languageCode,
         int $keyId,
@@ -59,6 +65,7 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         );
     }
 
+    /** Return a translation by ID, or null only when no row matches. */
     public function getById(int $id): ?TranslationDTO
     {
         $row = $this->gateway->fetchOne(
@@ -70,6 +77,10 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         return $row === null ? null : $this->map($row);
     }
 
+    /**
+     * Read the row for this exact nullable language scope and key; null is
+     * unlocalized, with no fallback or normalization.
+     */
     public function getByLanguageAndKey(?string $languageCode, int $keyId): ?TranslationDTO
     {
         $row = $this->gateway->fetchOne(
@@ -87,6 +98,7 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         return $row === null ? null : $this->map($row);
     }
 
+    /** Return every translation of the key in language-identity order; no rows yields an empty collection. */
     public function listByKey(int $keyId): TranslationCollectionDTO
     {
         $rows = $this->gateway->fetchAll(
@@ -107,7 +119,8 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
     }
 
     /**
-     * @return bool whether the exact translation row was deleted
+     * Delete the exact nullable language-scope row for the key (`null` is
+     * unlocalized); return whether it existed.
      */
     public function deleteByLanguageAndKey(?string $languageCode, int $keyId): bool
     {
@@ -122,6 +135,7 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         ) > 0;
     }
 
+    /** Test whether a row exists for this exact nullable language scope and key. */
     public function existsByLanguageAndKey(?string $languageCode, int $keyId): bool
     {
         return $this->gateway->exists(
@@ -137,6 +151,7 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         );
     }
 
+    /** Test whether any row exists in this exact nullable language scope. */
     public function hasAnyForLanguage(?string $languageCode): bool
     {
         return $this->gateway->exists(
@@ -149,6 +164,10 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         );
     }
 
+    /**
+     * Move rows from the exact non-null old code to the exact new code; the
+     * caller ensures the new code has no rows. Return the number of rows moved.
+     */
     public function rekeyLanguageCode(string $oldCode, string $newCode): int
     {
         return $this->gateway->write(

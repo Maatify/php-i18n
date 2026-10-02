@@ -30,6 +30,10 @@ final readonly class I18nOperationalReadService
     }
 
     /**
+     * Return the Package-owned translated count for each exact language scope,
+     * including null for the unlocalized scope; the Host composes language
+     * metadata and languages with zero translations.
+     *
      * @return list<I18nLanguageCodeCountDTO>
      */
     public function translatedCountByLanguageCode(): array
@@ -38,6 +42,8 @@ final readonly class I18nOperationalReadService
     }
 
     /**
+     * Return the Package-owned key count grouped by scope.
+     *
      * @return list<I18nStatCountDTO>
      */
     public function keyCountByScope(): array
@@ -50,6 +56,11 @@ final readonly class I18nOperationalReadService
         return $this->stats->summaryRowCount();
     }
 
+    /**
+     * Return key totals for domains assigned to the scope and translated counts
+     * by exact non-null language code; the Host composes language metadata and
+     * languages with zero translations.
+     */
     public function scopeKeyCoverage(string $scopeCode): ScopeKeyCoverageDTO
     {
         return $this->stats->scopeKeyCoverage($scopeCode);

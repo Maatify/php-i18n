@@ -25,6 +25,10 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         $this->gateway = new PdoGateway($pdo);
     }
 
+    /**
+     * Test whether this exact scope/domain pair is assigned. SHARE/UPDATE
+     * locking modes require an active transaction.
+     */
     public function isDomainAllowedForScope(
         string $scopeCode,
         string $domainCode,
@@ -40,6 +44,7 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         );
     }
 
+    /** Return assigned domain codes in ascending order; no assignments yields an empty list. */
     public function listDomainsForScope(string $scopeCode): array
     {
         $rows = $this->gateway->fetchAll(
@@ -59,6 +64,7 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         return $codes;
     }
 
+    /** Return assigned domain code/name options ordered by code; no assignments yields an empty collection. */
     public function listDomainOptionsForScope(string $scopeCode): DomainOptionCollectionDTO
     {
         $rows = $this->gateway->fetchAll(
@@ -80,6 +86,7 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         return new DomainOptionCollectionDTO($items);
     }
 
+    /** Test whether any domain is assigned to this scope; locking modes require an active transaction. */
     public function hasDomainsForScope(string $scopeCode, LockModeEnum $lock = LockModeEnum::NONE): bool
     {
         return $this->gateway->exists(
@@ -89,6 +96,7 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         );
     }
 
+    /** Test whether this domain is assigned to any scope; locking modes require an active transaction. */
     public function hasScopesForDomain(string $domainCode, LockModeEnum $lock = LockModeEnum::NONE): bool
     {
         return $this->gateway->exists(
@@ -98,6 +106,12 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         );
     }
 
+    /**
+     * Insert this exact scope/domain assignment; an existing pair raises
+     * DomainScopeAlreadyAssignedException.
+     *
+     * @throws DomainScopeAlreadyAssignedException
+     */
     public function assign(string $scopeCode, string $domainCode): void
     {
         try {
@@ -116,9 +130,7 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         }
     }
 
-    /**
-     * @return bool whether the exact assignment row was deleted
-     */
+    /** Delete this exact assignment and return whether a row was deleted. */
     public function unassign(string $scopeCode, string $domainCode): bool
     {
         return $this->gateway->write(
@@ -130,6 +142,10 @@ final readonly class MysqlDomainScopeRepository implements DomainScopeRepository
         ) > 0;
     }
 
+    /**
+     * Return the enum's SQL lock suffix; non-NONE modes require an active
+     * transaction and otherwise raise LogicException.
+     */
     private function lockSuffix(LockModeEnum $lock): string
     {
         if ($lock !== LockModeEnum::NONE && !$this->gateway->pdo()->inTransaction()) {

@@ -90,6 +90,7 @@ final readonly class MysqlGovernanceTableSupport
         );
     }
 
+    /** Raise LogicException when a locking read has no active transaction. */
     public function assertInTransaction(): void
     {
         if (!$this->gateway->pdo()->inTransaction()) {
@@ -97,6 +98,10 @@ final readonly class MysqlGovernanceTableSupport
         }
     }
 
+    /**
+     * Return the SQL suffix from LockModeEnum; NONE needs no transaction,
+     * while SHARE/UPDATE require one and otherwise raise LogicException.
+     */
     public function lockSuffix(LockModeEnum $lock): string
     {
         if ($lock !== LockModeEnum::NONE) {

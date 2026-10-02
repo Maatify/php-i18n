@@ -189,6 +189,10 @@ final readonly class PdoGateway
         return $row;
     }
 
+    /**
+     * After fetch returns false, treat error code 00000 as result exhaustion;
+     * any other statement error code raises I18nStorageException.
+     */
     private function assertNoFetchError(PDOStatement $stmt, string $operation): void
     {
         if ($stmt->errorCode() !== '00000') {
