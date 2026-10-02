@@ -59,13 +59,21 @@ final readonly class I18nDomainManagementService
 
     /**
      * @throws DomainNotFoundException
+     * @throws I18nInvalidArgumentException when id is not positive
      */
     public function updateMetadata(UpdateDomainMetadataCommand $command): void
     {
         $this->tx->run(function () use ($command): void {
-            $this->lockOrFail($command->id);
+            $current = $this->lockOrFail($command->id);
 
-            $this->repository->updateMetadata($command);
+            if (($command->name === null || $command->name === $current->name)
+                && ($command->description === null || $command->description === $current->description)) {
+                return;
+            }
+
+            if (!$this->repository->updateMetadata($command)) {
+                throw new DomainNotFoundException((string) $command->id);
+            }
         });
     }
 
@@ -74,10 +82,20 @@ final readonly class I18nDomainManagementService
      */
     public function setActive(int $id, bool $isActive): void
     {
-        $this->tx->run(function () use ($id, $isActive): void {
-            $this->lockOrFail($id);
+        if ($id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
+        }
 
-            $this->repository->setActive($id, $isActive);
+        $this->tx->run(function () use ($id, $isActive): void {
+            $current = $this->lockOrFail($id);
+
+            if ($current->isActive === $isActive) {
+                return;
+            }
+
+            if (!$this->repository->setActive($id, $isActive)) {
+                throw new DomainNotFoundException((string) $id);
+            }
         });
     }
 
@@ -85,9 +103,14 @@ final readonly class I18nDomainManagementService
      * @throws DomainNotFoundException
      * @throws DomainInUseException  the current code is used by mappings or keys
      * @throws DomainAlreadyExistsException the new code is taken
+     * @throws I18nInvalidArgumentException when id or newCode is invalid
      */
     public function changeCode(int $id, string $newCode): void
     {
+        if ($id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
+        }
+
         if (trim($newCode) === '') {
             throw I18nInvalidArgumentException::emptyField('newCode');
         }

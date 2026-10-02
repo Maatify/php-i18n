@@ -44,10 +44,8 @@ interface TranslationRepositoryInterface
      */
     public function listByKey(int $keyId): TranslationCollectionDTO;
 
-    /**
-     * @return int affected rows (0 or 1)
-     */
-    public function deleteByLanguageAndKey(?string $languageCode, int $keyId): int;
+    /** Deletes the exact translation row and reports whether it existed. */
+    public function deleteByLanguageAndKey(?string $languageCode, int $keyId): bool;
 
     /**
      * True when at least one translation row owns exactly this code.

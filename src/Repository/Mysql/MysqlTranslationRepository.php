@@ -106,7 +106,10 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
         return new TranslationCollectionDTO($items);
     }
 
-    public function deleteByLanguageAndKey(?string $languageCode, int $keyId): int
+    /**
+     * @return bool whether the exact translation row was deleted
+     */
+    public function deleteByLanguageAndKey(?string $languageCode, int $keyId): bool
     {
         return $this->gateway->write(
             'DELETE FROM maa_i18n_translations
@@ -116,7 +119,7 @@ final readonly class MysqlTranslationRepository implements TranslationRepository
                 'key_id' => $keyId,
             ]),
             'translation.delete',
-        );
+        ) > 0;
     }
 
     public function existsByLanguageAndKey(?string $languageCode, int $keyId): bool

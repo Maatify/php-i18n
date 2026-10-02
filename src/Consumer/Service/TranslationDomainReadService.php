@@ -9,12 +9,13 @@ use Maatify\I18n\Repository\TranslationRepositoryInterface;
 use Maatify\I18n\Consumer\DTO\TranslationDomainTranslationsDTO;
 use Maatify\I18n\Consumer\DTO\TranslationValueDTO;
 use Maatify\I18n\Consumer\DTO\TranslationDomainValuesDTO;
-use Maatify\I18n\Exception\InvalidLanguageCodeException;
 use Maatify\I18n\Service\I18nGovernancePolicyService;
 use Maatify\I18n\ValueObject\LanguageCode;
 
 /**
  * Reads all available translations for one domain and exact language scope without applying a fallback.
+ * Invalid codes and unreadable governance combinations return empty DTOs;
+ * repository storage failures propagate unchanged.
  */
 final readonly class TranslationDomainReadService
 {
@@ -31,7 +32,8 @@ final readonly class TranslationDomainReadService
      * - Exact scope only: `$languageCode` reads that code, `null` reads the
      *   unlocalized scope; no fallback of any kind (Host policy)
      * - No language registry lookup; an unknown code simply owns no rows
-     * - Fail-soft: empty DTO when nothing resolvable
+     * - Invalid codes and unreadable governance return an empty DTO
+     * - Repository storage failures propagate
      */
     public function getDomainValues(
         ?string $languageCode,
@@ -52,16 +54,15 @@ final readonly class TranslationDomainReadService
      *
      * Missing rows are absent from the result. An empty value remains present
      * with its optional type. Invalid codes or unreadable domains return an
-     * empty DTO; no fallback is applied.
+     * empty DTO; storage failures propagate and no fallback is applied.
      */
     public function getDomainTranslations(
         ?string $languageCode,
         string $scope,
         string $domain,
     ): TranslationDomainTranslationsDTO {
-        try {
-            $exactCode = LanguageCode::fromNullable($languageCode);
-        } catch (InvalidLanguageCodeException) {
+        $exactCode = LanguageCode::tryFromNullable($languageCode);
+        if ($exactCode === null) {
             return new TranslationDomainTranslationsDTO([]);
         }
 

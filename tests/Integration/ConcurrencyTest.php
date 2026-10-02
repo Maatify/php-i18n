@@ -294,8 +294,10 @@ final class ConcurrencyTest extends MysqlIntegrationTestCase
         $stmt = $this->pdo()->query('SELECT sort_order FROM maa_i18n_scopes ORDER BY sort_order ASC');
         self::assertNotFalse($stmt);
 
+        /** @var list<int|string> $values */
+        $values = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $positions = [];
-        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $value) {
+        foreach ($values as $value) {
             $positions[] = is_numeric($value) ? (int) $value : -1;
         }
 

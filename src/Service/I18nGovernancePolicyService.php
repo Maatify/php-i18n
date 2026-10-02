@@ -37,13 +37,17 @@ final readonly class I18nGovernancePolicyService
         string $scope,
         string $domain,
     ): void {
-        $this->assertWith(
+        $violation = $this->violationFor(
             $scope,
             $domain,
             $this->scopeRepository->getByCode($scope),
             $this->domainRepository->getByCode($domain),
             LockModeEnum::NONE,
         );
+
+        if ($violation !== null) {
+            throw $violation;
+        }
     }
 
     /**
@@ -62,7 +66,11 @@ final readonly class I18nGovernancePolicyService
         $scopeDto = $this->scopeRepository->getByCode($scope, LockModeEnum::SHARE);
         $domainDto = $this->domainRepository->getByCode($domain, LockModeEnum::SHARE);
 
-        $this->assertWith($scope, $domain, $scopeDto, $domainDto, LockModeEnum::SHARE);
+        $violation = $this->violationFor($scope, $domain, $scopeDto, $domainDto, LockModeEnum::SHARE);
+
+        if ($violation !== null) {
+            throw $violation;
+        }
     }
 
     /**
@@ -76,72 +84,51 @@ final readonly class I18nGovernancePolicyService
         string $scope,
         string $domain,
     ): bool {
-        try {
-            $this->assertScopeAndDomainAllowed($scope, $domain);
-            return true;
-        } catch (
-            ScopeNotAllowedException|
-            DomainNotAllowedException|
-            DomainScopeViolationException
-        ) {
-            return false;
-        }
+        return $this->violationFor(
+            $scope,
+            $domain,
+            $this->scopeRepository->getByCode($scope),
+            $this->domainRepository->getByCode($domain),
+            LockModeEnum::NONE,
+        ) === null;
     }
 
-    private function assertWith(
+    private function violationFor(
         string $scope,
         string $domain,
         ?ScopeDTO $scopeDto,
         ?DomainDTO $domainDto,
         LockModeEnum $lock,
-    ): void {
+    ): ScopeNotAllowedException|DomainNotAllowedException|DomainScopeViolationException|null {
         if ($this->mode === I18nPolicyModeEnum::STRICT) {
-            $this->assertStrict($scope, $domain, $scopeDto, $domainDto, $lock);
-            return;
+            if ($scopeDto === null || !$scopeDto->isActive) {
+                return new ScopeNotAllowedException($scope);
+            }
+
+            if ($domainDto === null || !$domainDto->isActive) {
+                return new DomainNotAllowedException($domain);
+            }
+
+            if (!$this->domainScopeRepository->isDomainAllowedForScope($scope, $domain, $lock)) {
+                return new DomainScopeViolationException($scope, $domain);
+            }
+
+            return null;
         }
 
-        $this->assertPermissive($scope, $domain, $scopeDto, $domainDto, $lock);
-    }
-
-    private function assertStrict(
-        string $scope,
-        string $domain,
-        ?ScopeDTO $scopeDto,
-        ?DomainDTO $domainDto,
-        LockModeEnum $lock,
-    ): void {
-        if ($scopeDto === null || !$scopeDto->isActive) {
-            throw new ScopeNotAllowedException($scope);
-        }
-
-        if ($domainDto === null || !$domainDto->isActive) {
-            throw new DomainNotAllowedException($domain);
-        }
-
-        if (!$this->domainScopeRepository->isDomainAllowedForScope($scope, $domain, $lock)) {
-            throw new DomainScopeViolationException($scope, $domain);
-        }
-    }
-
-    private function assertPermissive(
-        string $scope,
-        string $domain,
-        ?ScopeDTO $scopeDto,
-        ?DomainDTO $domainDto,
-        LockModeEnum $lock,
-    ): void {
         if ($scopeDto !== null && !$scopeDto->isActive) {
-            throw new ScopeNotAllowedException($scope);
+            return new ScopeNotAllowedException($scope);
         }
 
         if ($domainDto !== null && !$domainDto->isActive) {
-            throw new DomainNotAllowedException($domain);
+            return new DomainNotAllowedException($domain);
         }
 
-        if ($scopeDto !== null && $domainDto !== null) {
-            if (!$this->domainScopeRepository->isDomainAllowedForScope($scope, $domain, $lock)) {
-                throw new DomainScopeViolationException($scope, $domain);
-            }
+        if ($scopeDto !== null && $domainDto !== null
+            && !$this->domainScopeRepository->isDomainAllowedForScope($scope, $domain, $lock)) {
+            return new DomainScopeViolationException($scope, $domain);
         }
+
+        return null;
     }
 }

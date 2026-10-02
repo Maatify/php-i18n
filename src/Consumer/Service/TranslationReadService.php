@@ -8,10 +8,10 @@ use Maatify\I18n\Consumer\DTO\TranslationValueDTO;
 use Maatify\I18n\Repository\TranslationKeyRepositoryInterface;
 use Maatify\I18n\Repository\TranslationRepositoryInterface;
 use Maatify\I18n\ValueObject\LanguageCode;
-use Maatify\I18n\Exception\InvalidLanguageCodeException;
 
 /**
- * Provides fail-soft exact-scope translation reads. A miss returns `null`; the service never applies a language fallback.
+ * Provides fail-soft exact-scope translation reads. Invalid codes and misses
+ * return `null`; repository storage failures propagate unchanged.
  */
 final readonly class TranslationReadService
 {
@@ -22,7 +22,8 @@ final readonly class TranslationReadService
 
     /**
      * Safe exact read (ADR-019):
-     * - No exceptions
+     * - Invalid codes and missing identities return null
+     * - Repository storage failures propagate
      * - No parsing
      * - Structured key only
      * - Exact scope only: `$languageCode` reads that code, `null` reads the
@@ -52,9 +53,8 @@ final readonly class TranslationReadService
         string $domain,
         string $key,
     ): ?TranslationValueDTO {
-        try {
-            $exactCode = LanguageCode::fromNullable($languageCode);
-        } catch (InvalidLanguageCodeException) {
+        $exactCode = LanguageCode::tryFromNullable($languageCode);
+        if ($exactCode === null) {
             return null; // fail-soft: an invalid code can own no row
         }
 

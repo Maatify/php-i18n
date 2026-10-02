@@ -122,8 +122,28 @@ final class OperationalReadTest extends MysqlIntegrationTestCase
 
     public function testDomainCoverageRejectsAnEmptyCode(): void
     {
-        $this->expectException(I18nInvalidArgumentException::class);
-        $this->operationalRead->domainCoverage('ct', '');
+        foreach (['', " \t\n", str_repeat('x', 17)] as $invalid) {
+            try {
+                $this->operationalRead->domainCoverage('ct', $invalid);
+                self::fail('Expected the exact language-code contract to reject the input.');
+            } catch (I18nInvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testDomainCoverageUsesAValidLanguageCodeExactlyAsSupplied(): void
+    {
+        $keyId = $this->createKey('ct', 'home', 'custom-code');
+        $this->upsert('custom.CODE', $keyId, 'value', null);
+
+        $counts = [];
+        foreach ($this->operationalRead->domainCoverage('ct', 'custom.CODE') as $row) {
+            $counts[$row->domainCode] = $row->translatedCount;
+        }
+
+        ksort($counts);
+        self::assertSame(['auth' => 0, 'cart' => 0, 'home' => 1], $counts);
     }
 
     public function testSummaryAndKeyStatsRebuildKeepsTheFactsEquivalent(): void

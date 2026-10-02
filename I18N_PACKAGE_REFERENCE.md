@@ -81,8 +81,8 @@ The language is an exact, nullable, Host-owned `language_code` ([ADR-019](dcos/A
 - A non-null code is the **exact scope of that code**. Reading `'ar'` never returns an `'ar-EG'`, `'en'` or `null`-scope value; reading `null` never returns a language row.
 - **No fallback, default or wildcard** exists anywhere in the Package.
 - **No normalization:** codes are stored as given; the column collation is binary, so `'ar'` and `'AR'` are different identities.
-- **Technical validity only:** a non-null code must not be empty, must not be whitespace-only and must be at most 16 characters (`LanguageCode::MAX_LENGTH`). Whether the code names a real, active or supported language is Host policy and is never checked.
-- **Invalid code:** writes and command construction throw `InvalidLanguageCodeException`; reads (`TranslationReadService`, `TranslationDomainReadService`) are fail-soft and return `null` or an empty DTO.
+- **Technical validity only:** a non-null code must not be empty, must not be whitespace-only and must be at most 16 characters (`LanguageCode::MAX_LENGTH`). The exact supplied code is preserved; I18n never trims, lowercases or otherwise normalizes it. Whether the code names a real, active or supported language is Host policy and is never checked.
+- **Invalid code:** writes and command construction throw `InvalidLanguageCodeException`; consumer reads (`TranslationReadService`, `TranslationDomainReadService`) are fail-soft and return `null` or an empty DTO. Repository storage failures propagate; they are never converted into misses ([section 6.3](#63-storage-failure-contract)).
 - **Empty value:** the empty string is a valid, authoritative translation value. It is not a missing translation.
 - **Identity:** `(key_id, language_code)` is unique and NULL-safe through the generated `language_code_identity` column.
 
@@ -126,9 +126,9 @@ Constructor: `(TransactionRunnerInterface, TranslationKeyRepositoryInterface, Tr
 |---|---|---|
 | `createKey(CreateKeyCommand): int` | id of the new key | `ScopeNotAllowedException`, `DomainNotAllowedException`, `DomainScopeViolationException`, `TranslationKeyAlreadyExistsException`, `TranslationKeyCreateFailedException` |
 | `renameKey(RenameKeyCommand): void` | renames and/or moves a key to another assigned `(scope, domain)`; id and translations are preserved | governance exceptions above, `TranslationKeyNotFoundException`, `TranslationKeyAlreadyExistsException` |
-| `updateKeyDescription(int $keyId, string $description): void` | | `TranslationKeyNotFoundException` |
+| `updateKeyDescription(int $keyId, string $description): void` | updates the description; a repeated value is a successful no-op | `I18nInvalidArgumentException` for a non-positive keyId, `TranslationKeyNotFoundException` |
 | `upsertTranslation(UpsertTranslationCommand): int` | id of the translation row; a new row refreshes derived layers, while a type-only update does not alter counts | `TranslationKeyNotFoundException`, `TranslationUpsertFailedException` |
-| `deleteTranslation(?string $languageCode, int $keyId): void` | deletes the exact scope's row if present; deleting a missing row is a no-op | `InvalidLanguageCodeException`, `TranslationKeyNotFoundException` |
+| `deleteTranslation(?string $languageCode, int $keyId): void` | deletes the exact scope's row if present; deleting a missing row is a no-op | `I18nInvalidArgumentException` for a non-positive keyId, `InvalidLanguageCodeException`, `TranslationKeyNotFoundException` |
 | `rekeyLanguageCode(string $oldCode, string $newCode): int` | number of re-keyed translations; `0` when both codes are equal | `InvalidLanguageCodeException`, `LanguageCodeAlreadyInUseException` |
 
 `rekeyLanguageCode` moves every translation of `$oldCode` to `$newCode`, recomputes the affected derived summary rows, and refuses (nothing merged, nothing lost) when `$newCode` already owns translations. The Host performs its own language rename in the same transaction ([section 7](#7-transactions-and-concurrency)).
@@ -144,10 +144,11 @@ All constructors take a `TransactionRunnerInterface` first. Fail-hard.
 | `I18nScopeDomainManagementService(tx, ScopeRepositoryInterface, DomainRepositoryInterface, DomainScopeRepositoryInterface)` | `assign(string $scopeCode, string $domainCode): void`, `unassign(string $scopeCode, string $domainCode): void` |
 
 - `create` returns the new id and appends the display position (a position is never an input).
-- `changeCode` throws `I18nInvalidArgumentException` for an empty value or one longer than 32 (scope) or 64 (domain) characters; `ScopeInUseException` / `DomainInUseException` when the current code is used by an assignment or a key; `ScopeAlreadyExistsException` / `DomainAlreadyExistsException` when the new code is taken; `ScopeNotFoundException` / `DomainNotFoundException` for an unknown id.
+- Direct raw IDs accepted by these services (`setActive` and `changeCode`) must be positive; otherwise `I18nInvalidArgumentException` is thrown before repository access.
+- `changeCode` throws `I18nInvalidArgumentException` for a non-positive id, an empty new code or one longer than 32 (scope) or 64 (domain) characters; `ScopeInUseException` / `DomainInUseException` when the current code is used by an assignment or a key; `ScopeAlreadyExistsException` / `DomainAlreadyExistsException` when the new code is taken; `ScopeNotFoundException` / `DomainNotFoundException` for an unknown positive id.
 - `moveToPosition` is delegated to `maatify/persistence` ordering (positions are clamped); an unknown id throws `ScopeNotFoundException` / `DomainNotFoundException`.
 - `assign` / `unassign` throw `ScopeNotFoundException`, `DomainNotFoundException`, and respectively `DomainScopeAlreadyAssignedException` / `DomainScopeNotAssignedException`.
-- `updateMetadata` and `setActive` throw `ScopeNotFoundException` / `DomainNotFoundException` for an unknown id.
+- `updateMetadata` and `setActive` throw `ScopeNotFoundException` / `DomainNotFoundException` for an unknown positive id. A repeated metadata or active-state value remains a successful no-op.
 
 ### 5.4 Management reads (`Management\Service`)
 
@@ -157,14 +158,14 @@ Read-only. A requested identity that does not exist is an exception; a list over
 
 | Method | Result | Throws |
 |---|---|---|
-| `getScope(int $id)`, `getScopeByCode(string $code)` | `ScopeDTO` | `ScopeNotFoundException` |
+| `getScope(int $id)`, `getScopeByCode(string $code)` | `ScopeDTO` | `I18nInvalidArgumentException` for a non-positive id; `ScopeNotFoundException` |
 | `searchScopes(ScopeListCriteria)` | `PageResult<ScopeDTO>` | |
-| `getDomain(int $id)` | `DomainDTO` | `DomainNotFoundException` |
+| `getDomain(int $id)` | `DomainDTO` | `I18nInvalidArgumentException` for a non-positive id; `DomainNotFoundException` |
 | `searchDomains(DomainListCriteria)` | `PageResult<DomainDTO>` | |
 | `searchScopeDomains(ScopeDomainListCriteria)` | `PageResult<DomainAssignmentDTO>` (every domain with its `assigned` flag for one scope) | |
 | `isDomainAssigned(string $scopeCode, string $domainCode)` | `bool` | |
 | `listDomainOptionsForScope(string $scopeCode)` | `DomainOptionCollectionDTO` (`code`, `name` of the assigned domains, for selectors) | |
-| `getKey(int $keyId)` | `TranslationKeyDTO` | `TranslationKeyNotFoundException` |
+| `getKey(int $keyId)` | `TranslationKeyDTO` | `I18nInvalidArgumentException` for a non-positive keyId; `TranslationKeyNotFoundException` |
 | `searchKeys(KeyListCriteria)` | `PageResult<TranslationKeyDTO>` | |
 | `pageDomainKeySummaries(DomainKeySummaryCriteria)` | `PageResult<KeyTranslationSummaryDTO>` | |
 | `pageDomainTranslationGrid(DomainTranslationGridCriteria)` | `PageResult<TranslationGridRowDTO>` | |
@@ -200,7 +201,7 @@ Constructor: `(I18nOperationalStatsRepositoryInterface)`. Read-only; the Host co
 | `keyCountByScope(): list<I18nStatCountDTO>` | keys per scope, most keys first, for scopes that have keys (`label` is the scope `name`) |
 | `summaryRowCount(): int` | rows held by the derived language summary (rebuild reporting) |
 | `scopeKeyCoverage(string $scopeCode): ScopeKeyCoverageDTO` | `totalKeys` of the domains assigned to the scope and the translated count per exact non-null code (`translatedByLanguage`) |
-| `domainCoverage(string $scopeCode, string $languageCode): list<DomainCoverageDTO>` | per-domain `totalKeys` / `translatedCount` of one scope for one exact code, most missing first then display order; domains of the scope that have keys only. Throws `I18nInvalidArgumentException` for an empty `$languageCode` |
+| `domainCoverage(string $scopeCode, string $languageCode): list<DomainCoverageDTO>` | per-domain `totalKeys` / `translatedCount` of one scope for one exact code, most missing first then display order; domains of the scope that have keys only. Throws `I18nInvalidArgumentException` when `$languageCode` is empty, whitespace-only or longer than 16 characters; accepted values remain exact |
 
 Classification: I18n is **In Scope** for Operational Read / Reporting because it owns persisted governance, key and translation state; the surface above is its stable read contract. Intentionally unsupported: time-window or per-user dimensions, per-language names or ordering, and "languages with zero translations" (the Host language universe is unknown to I18n).
 
@@ -209,7 +210,7 @@ Classification: I18n is **In Scope** for Operational Read / Reporting because it
 | Type | Role |
 |---|---|
 | `Service\I18nGovernancePolicyService(ScopeRepositoryInterface, DomainRepositoryInterface, DomainScopeRepositoryInterface, I18nPolicyModeEnum $mode = STRICT)` | `assertScopeAndDomainAllowed(string $scope, string $domain): void`, `assertScopeAndDomainAllowedForUsage(...)` (takes SHARE locks; requires an active transaction), `isScopeAndDomainReadable(...): bool`. `STRICT` (default and the production setting) requires an existing, active scope, an existing, active domain and an assignment; `PERMISSIVE` lets a physically missing scope or domain pass but still enforces `is_active` and the assignment when both rows exist (migration and development only). Throws `ScopeNotAllowedException`, `DomainNotAllowedException`, `DomainScopeViolationException` |
-| `Service\MissingCounterService(DomainLanguageSummaryRepositoryInterface, TranslationKeyRepositoryInterface, KeyStatsRepositoryInterface)` | Keeps the derived layers correct inside the caller's transaction: `onKeyCreated`, `onKeyDeleted`, `onTranslationCreated`, `onTranslationDeleted`, `onLanguageCodeRekeyed`, `onKeyMoved`. It is composed into `TranslationWriteService`; call it directly only when you implement your own write path |
+| `Service\MissingCounterService(DomainLanguageSummaryRepositoryInterface, TranslationKeyRepositoryInterface, KeyStatsRepositoryInterface)` | Keeps the derived layers correct inside the caller's transaction: `onKeyCreated`, `onKeyDeleted`, `onTranslationCreated`, `onTranslationDeleted`, `onLanguageCodeRekeyed`, `onKeyMoved`. Key IDs must be positive; invalid IDs throw `I18nInvalidArgumentException` before repository access. Translation and language-code re-key callbacks validate codes through `LanguageCode`; `null` in nullable translation callbacks is the exact unlocalized scope, valid codes pass through unchanged, and invalid codes throw `InvalidLanguageCodeException` before repository access. It is composed into `TranslationWriteService`; call it directly only when you implement your own write path |
 | `Management\Service\I18nStatsRebuilder(TransactionRunnerInterface, DomainLanguageSummaryRepositoryInterface, KeyStatsRepositoryInterface)` | `fullRebuild(): void` clears and rebuilds both derived tables from keys and translations in one transaction (SQL-driven, idempotent). Operational recovery only |
 
 ### 5.7 Commands (`Management\Command`)
@@ -228,16 +229,16 @@ Self-validating `final readonly` intents. Invalid input throws `I18nInvalidArgum
 
 ### 5.8 Criteria (`Management\Criteria`)
 
-All carry a `PageRequest $page = new PageRequest()`. Empty required codes throw `I18nInvalidArgumentException`.
+All carry a `PageRequest $page = new PageRequest()`. Empty required codes and non-positive supplied ID filters throw `I18nInvalidArgumentException`. Language-code criteria accept only non-empty, non-whitespace exact codes up to 16 characters; they preserve case and the exact supplied value.
 
 | Criteria | Inputs |
 |---|---|
-| `ScopeListCriteria`, `DomainListCriteria` | `globalSearch`, `id`, `code`, `name`, `isActive` |
-| `ScopeDomainListCriteria` | `scopeCode` (required), `globalSearch`, `id`, `code`, `name`, `isActive`, `assigned` |
-| `KeyListCriteria` | `scopeCode` (required), `globalSearch`, `id`, `domainLike`, `keyPartLike` |
-| `DomainKeySummaryCriteria` | `scopeCode`, `domainCode`, `languageCodes` (the exact codes to measure), `globalSearch`, `keyId`, `keyPart`, `onlyMissing` |
-| `DomainTranslationGridCriteria` | `scopeCode`, `domainCode`, `languageCodes`, `globalSearch`, `globalSearchLanguageCodes` (codes whose Host metadata matched a free-text search), `keyId`, `keyPartLike`, `valueLike` |
-| `LanguageTranslationValuesCriteria` | `languageCode` (required, exact), `globalSearch`, `id`, `scopeLike`, `domainLike`, `keyPartLike`, `valueLike` |
+| `ScopeListCriteria`, `DomainListCriteria` | `globalSearch`, positive `id`, `code`, `name`, `isActive` |
+| `ScopeDomainListCriteria` | `scopeCode` (required), `globalSearch`, positive `id`, `code`, `name`, `isActive`, `assigned` |
+| `KeyListCriteria` | `scopeCode` (required), `globalSearch`, positive `id`, `domainLike`, `keyPartLike` |
+| `DomainKeySummaryCriteria` | `scopeCode`, `domainCode`, `languageCodes` (exact technically valid codes to measure), `globalSearch`, positive `keyId`, `keyPart`, `onlyMissing` |
+| `DomainTranslationGridCriteria` | `scopeCode`, `domainCode`, `languageCodes`, `globalSearch`, `globalSearchLanguageCodes` (exact technically valid codes whose Host metadata matched a free-text search), positive `keyId`, `keyPartLike`, `valueLike` |
+| `LanguageTranslationValuesCriteria` | `languageCode` (required, exact and technically valid), `globalSearch`, positive `id`, `scopeLike`, `domainLike`, `keyPartLike`, `valueLike` |
 
 ### 5.9 Result DTOs (`DTO\`, `Consumer\DTO\`)
 
@@ -277,6 +278,18 @@ All carry a `PageRequest $page = new PageRequest()`. Empty required codes throw 
 **Contracts (`Repository\*Interface`)** are public so a Host can compose, decorate or substitute persistence: `ScopeRepositoryInterface`, `DomainRepositoryInterface`, `DomainScopeRepositoryInterface`, `TranslationKeyRepositoryInterface`, `TranslationRepositoryInterface`, `TranslationQueryRepositoryInterface`, `DomainLanguageSummaryRepositoryInterface`, `KeyStatsRepositoryInterface`, `I18nOperationalStatsRepositoryInterface`. Their failure contract: a genuine "no row" is `null`, empty or `false`; a storage failure never masquerades as one (see [section 6.3](#63-storage-failure-contract)).
 
 **MySQL implementations (`Repository\Mysql\Mysql*Repository`)** are the supported implementations of those contracts: `MysqlScopeRepository`, `MysqlDomainRepository`, `MysqlDomainScopeRepository`, `MysqlTranslationKeyRepository`, `MysqlTranslationRepository`, `MysqlTranslationQueryRepository`, `MysqlDomainLanguageSummaryRepository`, `MysqlKeyStatsRepository`, `MysqlI18nOperationalStatsRepository`. Constructors: every repository takes `PDO $pdo`; `MysqlTranslationRepository` additionally takes `Maatify\SharedCommon\Contracts\ClockInterface $clock`; `MysqlTranslationKeyRepository` and `MysqlTranslationQueryRepository` accept an optional `PdoPaginator` as a second argument.
+
+Command-repository mutation return contracts follow this matrix:
+
+| Operation | Repository result | Contract |
+|---|---|---|
+| Scope/domain/key `create` | `int` | generated row ID |
+| Scope/domain `updateMetadata`, `setActive`; key `updateDescription` | `bool` | whether the SQL update changed a row; Services lock/read first, so an unchanged value remains a successful no-op |
+| Scope/domain `moveToPosition` | `bool` | whether the target row existed and moved; ordering mechanics are delegated to `maatify/persistence` |
+| `DomainScopeRepositoryInterface::unassign` | `bool` | whether the exact mapping row was deleted |
+| `TranslationRepositoryInterface::deleteByLanguageAndKey` | `bool` | whether the exact translation row was deleted |
+
+Domain-specific operations retain their distinct contracts: `changeCode` and key `rename` perform guarded identity changes; translation `upsert` returns its upsert-result DTO; `rekeyLanguageCode` returns the number of migrated translations; `DomainScopeRepositoryInterface::assign` reports duplicate identity by exception and exposes no generated mapping ID; derived summary and key-stat mutations maintain package-owned derived state and expose no row IDs. These operations do not become generic create/update/delete commands.
 
 **Optional PHP-DI adapter (`Adapter\PhpDi\I18nBindings`)**: `I18nBindings::register(DI\ContainerBuilder $builder): void` registers `TransactionRunnerInterface` and the nine repository contracts above. The container must provide `PDO` and `ClockInterface`; services are autowired. The adapter requires `php-di/php-di` and `psr/container` in the Host; the Core never loads either (proved by the Consumer Verification Harness, which runs without them).
 

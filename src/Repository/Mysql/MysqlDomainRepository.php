@@ -233,7 +233,10 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         return $this->gateway->lastInsertId('domain.create');
     }
 
-    public function updateMetadata(UpdateDomainMetadataCommand $command): void
+    /**
+     * @return bool whether the SQL update changed a domain row
+     */
+    public function updateMetadata(UpdateDomainMetadataCommand $command): bool
     {
         $fields = [];
         $params = ['id' => $command->id];
@@ -248,20 +251,23 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
             $params['description'] = $command->description;
         }
 
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_domains SET ' . implode(', ', $fields) . ' WHERE id = :id',
             $params,
             'domain.updateMetadata',
-        );
+        ) > 0;
     }
 
-    public function setActive(int $id, bool $isActive): void
+    /**
+     * @return bool whether the SQL update changed a domain row
+     */
+    public function setActive(int $id, bool $isActive): bool
     {
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_domains SET is_active = :is_active WHERE id = :id',
             ['id' => $id, 'is_active' => $isActive ? 1 : 0],
             'domain.setActive',
-        );
+        ) > 0;
     }
 
     public function changeCode(int $id, string $newCode): void

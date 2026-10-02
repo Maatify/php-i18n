@@ -18,9 +18,11 @@ use Maatify\I18n\Management\Command\UpdateDomainMetadataCommand;
 use Maatify\I18n\Management\Command\UpdateScopeMetadataCommand;
 use Maatify\I18n\Management\Command\UpsertTranslationCommand;
 use Maatify\I18n\Management\Criteria\DomainKeySummaryCriteria;
+use Maatify\I18n\Management\Criteria\DomainListCriteria;
 use Maatify\I18n\Management\Criteria\DomainTranslationGridCriteria;
 use Maatify\I18n\Management\Criteria\KeyListCriteria;
 use Maatify\I18n\Management\Criteria\LanguageTranslationValuesCriteria;
+use Maatify\I18n\Management\Criteria\ScopeListCriteria;
 use Maatify\I18n\Management\Criteria\ScopeDomainListCriteria;
 use Maatify\I18n\ValueObject\TranslationType;
 use PHPUnit\Framework\TestCase;
@@ -144,10 +146,26 @@ final class PublicContractConventionsTest extends TestCase
                 type: str_repeat('x', TranslationType::MAX_LENGTH + 1),
             ),
             static fn() => new KeyListCriteria(' '),
+            static fn() => new ScopeListCriteria(id: 0),
+            static fn() => new DomainListCriteria(id: -1),
             static fn() => new ScopeDomainListCriteria(''),
+            static fn() => new ScopeDomainListCriteria('s', id: 0),
+            static fn() => new KeyListCriteria('s', id: -1),
             static fn() => new DomainKeySummaryCriteria('s', 'd', ['']),
+            static fn() => new DomainKeySummaryCriteria('s', 'd', [" \t\n"]),
+            static fn() => new DomainKeySummaryCriteria('s', 'd', [str_repeat('a', 17)]),
+            static fn() => new DomainKeySummaryCriteria('s', 'd', ['ar'], keyId: 0),
             static fn() => new DomainTranslationGridCriteria('s', '', []),
+            static fn() => new DomainTranslationGridCriteria('s', 'd', [" \t\n"]),
+            static fn() => new DomainTranslationGridCriteria('s', 'd', [str_repeat('a', 17)]),
+            static fn() => new DomainTranslationGridCriteria('s', 'd', [], globalSearchLanguageCodes: ['']),
+            static fn() => new DomainTranslationGridCriteria('s', 'd', [], globalSearchLanguageCodes: [" \t\n"]),
+            static fn() => new DomainTranslationGridCriteria('s', 'd', [], globalSearchLanguageCodes: [str_repeat('a', 17)]),
+            static fn() => new DomainTranslationGridCriteria('s', 'd', [], keyId: -1),
             static fn() => new LanguageTranslationValuesCriteria(''),
+            static fn() => new LanguageTranslationValuesCriteria(" \t\n"),
+            static fn() => new LanguageTranslationValuesCriteria(str_repeat('a', 17)),
+            static fn() => new LanguageTranslationValuesCriteria('ar', id: 0),
         ];
 
         foreach ($invalid as $build) {
@@ -167,6 +185,26 @@ final class PublicContractConventionsTest extends TestCase
             value: 'v',
             type: null,
         );
+    }
+
+    public function testManagementLanguageCriteriaPreserveValidExactCodes(): void
+    {
+        $summaryCode = 'custom.CODE';
+        $searchCode = 'AR';
+
+        $summary = new DomainKeySummaryCriteria('scope', 'domain', [$summaryCode]);
+        $grid = new DomainTranslationGridCriteria(
+            'scope',
+            'domain',
+            ['ar-EG'],
+            globalSearchLanguageCodes: [$searchCode],
+        );
+        $languageValues = new LanguageTranslationValuesCriteria('custom.CODE');
+
+        self::assertSame([$summaryCode], $summary->languageCodes);
+        self::assertSame(['ar-EG'], $grid->languageCodes);
+        self::assertSame([$searchCode], $grid->globalSearchLanguageCodes);
+        self::assertSame('custom.CODE', $languageValues->languageCode);
     }
 
     public function testAnEmptyTranslationValueAndTheNullScopeAreValid(): void

@@ -15,6 +15,8 @@ final readonly class ScopeListCriteria
 {
     /**
      * Builds scope filters without normalizing their search values.
+     *
+     * @throws I18nInvalidArgumentException when id is not positive
      */
     public function __construct(
         public ?string $globalSearch = null,
@@ -23,5 +25,9 @@ final readonly class ScopeListCriteria
         public ?string $name = null,
         public ?bool $isActive = null,
         public PageRequest $page = new PageRequest(),
-    ) {}
+    ) {
+        if ($id !== null && $id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
+        }
+    }
 }

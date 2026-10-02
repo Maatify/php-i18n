@@ -13,7 +13,8 @@ use Maatify\Persistence\Pdo\Pagination\PageRequest;
 final readonly class ScopeDomainListCriteria
 {
     /**
-     * Rejects an empty or whitespace-only scope code; null filters are omitted.
+     * Rejects an empty or whitespace-only scope code and non-positive IDs;
+     * null filters are omitted.
      *
      * @throws I18nInvalidArgumentException
      */
@@ -29,6 +30,10 @@ final readonly class ScopeDomainListCriteria
     ) {
         if (trim($scopeCode) === '') {
             throw I18nInvalidArgumentException::emptyField('scopeCode');
+        }
+
+        if ($id !== null && $id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
         }
     }
 }

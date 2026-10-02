@@ -13,6 +13,7 @@ use Maatify\I18n\DTO\ScopeDTO;
 use Maatify\I18n\DTO\TranslationGridRowDTO;
 use Maatify\I18n\DTO\TranslationKeyDTO;
 use Maatify\I18n\Exception\DomainNotFoundException;
+use Maatify\I18n\Exception\I18nInvalidArgumentException;
 use Maatify\I18n\Exception\ScopeNotFoundException;
 use Maatify\I18n\Exception\TranslationKeyNotFoundException;
 use Maatify\I18n\Management\Criteria\DomainKeySummaryCriteria;
@@ -49,9 +50,14 @@ final readonly class I18nManagementReadService
 
     /**
      * @throws ScopeNotFoundException
+     * @throws I18nInvalidArgumentException when id is not positive
      */
     public function getScope(int $id): ScopeDTO
     {
+        if ($id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
+        }
+
         return $this->scopes->getById($id) ?? throw new ScopeNotFoundException((string) $id);
     }
 
@@ -73,9 +79,14 @@ final readonly class I18nManagementReadService
 
     /**
      * @throws DomainNotFoundException
+     * @throws I18nInvalidArgumentException when id is not positive
      */
     public function getDomain(int $id): DomainDTO
     {
+        if ($id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
+        }
+
         return $this->domains->getById($id) ?? throw new DomainNotFoundException((string) $id);
     }
 
@@ -115,9 +126,14 @@ final readonly class I18nManagementReadService
 
     /**
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function getKey(int $keyId): TranslationKeyDTO
     {
+        if ($keyId <= 0) {
+            throw I18nInvalidArgumentException::notPositive('keyId');
+        }
+
         return $this->keys->getById($keyId) ?? throw new TranslationKeyNotFoundException($keyId);
     }
 

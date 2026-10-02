@@ -67,11 +67,19 @@ interface DomainRepositoryInterface
      */
     public function create(CreateDomainCommand $command, int $sortOrder): int;
 
-    /** Applies only the metadata fields supplied by the command. */
-    public function updateMetadata(UpdateDomainMetadataCommand $command): void;
+    /**
+     * Applies only the metadata fields supplied by the command.
+     *
+     * @return bool whether the stored row changed
+     */
+    public function updateMetadata(UpdateDomainMetadataCommand $command): bool;
 
-    /** Persists the domain's active state. */
-    public function setActive(int $id, bool $isActive): void;
+    /**
+     * Persists the domain's active state.
+     *
+     * @return bool whether the stored row changed
+     */
+    public function setActive(int $id, bool $isActive): bool;
 
     /**
      * @throws DomainAlreadyExistsException on a duplicate code
