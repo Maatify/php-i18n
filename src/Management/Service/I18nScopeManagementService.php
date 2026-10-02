@@ -78,7 +78,12 @@ final readonly class I18nScopeManagementService
     }
 
     /**
+     * Persist the scope's active state; a non-positive ID raises
+     * I18nInvalidArgumentException, setting the current state is a successful
+     * no-op, and a missing scope raises ScopeNotFoundException.
+     *
      * @throws ScopeNotFoundException
+     * @throws I18nInvalidArgumentException when id is not positive
      */
     public function setActive(int $id, bool $isActive): void
     {

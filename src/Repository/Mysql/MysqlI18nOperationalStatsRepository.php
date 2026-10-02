@@ -23,12 +23,19 @@ final readonly class MysqlI18nOperationalStatsRepository implements I18nOperatio
         $this->gateway = new PdoGateway($pdo);
     }
 
+    /** Return the package-owned count of all translation keys. */
     public function totalKeyCount(): int
     {
         return $this->gateway->scalarInt('SELECT COUNT(*) FROM maa_i18n_keys', [], 'stats.totalKeys');
     }
 
-    /** @return list<I18nLanguageCodeCountDTO> */
+    /**
+     * Return derived translated counts per exact language scope; a null code
+     * represents the unlocalized scope, and absent codes have no entry. The
+     * Host supplies language metadata and any zero-count language entries.
+     *
+     * @return list<I18nLanguageCodeCountDTO>
+     */
     public function translatedCountByLanguageCode(): array
     {
         $rows = $this->gateway->fetchAll(
@@ -52,7 +59,11 @@ final readonly class MysqlI18nOperationalStatsRepository implements I18nOperatio
         return $items;
     }
 
-    /** @return list<I18nStatCountDTO> */
+    /**
+     * Return package-owned key counts grouped by scope name, highest count first.
+     *
+     * @return list<I18nStatCountDTO>
+     */
     public function keyCountByScope(): array
     {
         $rows = $this->gateway->fetchAll(
@@ -75,6 +86,7 @@ final readonly class MysqlI18nOperationalStatsRepository implements I18nOperatio
         return $items;
     }
 
+    /** Return the number of rows currently stored in the derived language summary. */
     public function summaryRowCount(): int
     {
         return $this->gateway->scalarInt(
@@ -84,6 +96,11 @@ final readonly class MysqlI18nOperationalStatsRepository implements I18nOperatio
         );
     }
 
+    /**
+     * Return assigned-domain key totals and translated counts for exact
+     * non-null language codes in this scope. The Host supplies language
+     * metadata and any zero-count language entries.
+     */
     public function scopeKeyCoverage(string $scopeCode): ScopeKeyCoverageDTO
     {
         $total = $this->gateway->scalarInt(
@@ -121,6 +138,13 @@ final readonly class MysqlI18nOperationalStatsRepository implements I18nOperatio
         return new ScopeKeyCoverageDTO($total, $items);
     }
 
+    /**
+     * Return coverage for assigned domains in this exact scope and language
+     * code, limited to domains with keys and ordered by most missing, then
+     * display position.
+     *
+     * @return list<DomainCoverageDTO>
+     */
     public function domainCoverage(string $scopeCode, string $languageCode): array
     {
         $rows = $this->gateway->fetchAll(

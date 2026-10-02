@@ -33,6 +33,13 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
         $this->gateway = new PdoGateway($pdo);
     }
 
+    /**
+     * Page key summaries for one scope/domain, counting how many supplied exact
+     * language codes each key is missing. Duplicate codes count once; an empty
+     * code list yields zero total languages and zero missing per key.
+     *
+     * @return PageResult<KeyTranslationSummaryDTO>
+     */
     public function pageDomainKeySummaries(DomainKeySummaryCriteria $criteria): PageResult
     {
         $codes = array_values(array_unique($criteria->languageCodes));
@@ -119,6 +126,13 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
         );
     }
 
+    /**
+     * Page the key-by-supplied-code grid for one scope/domain. Codes are exact
+     * and deduplicated; an empty list yields no grid rows, and a null value marks
+     * a missing translation.
+     *
+     * @return PageResult<TranslationGridRowDTO>
+     */
     public function pageDomainTranslationGrid(DomainTranslationGridCriteria $criteria): PageResult
     {
         $codes = array_values(array_unique($criteria->languageCodes));
@@ -239,6 +253,13 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
         );
     }
 
+    /**
+     * Page every key with its translation from the one exact language code;
+     * keys without a row remain in the result with null translation fields.
+     * Filtering, sorting, and page selection are applied through the criteria.
+     *
+     * @return PageResult<LanguageTranslationValueDTO>
+     */
     public function pageLanguageTranslationValues(LanguageTranslationValuesCriteria $criteria): PageResult
     {
         $where = [];

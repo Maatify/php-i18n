@@ -78,7 +78,12 @@ final readonly class I18nDomainManagementService
     }
 
     /**
+     * Persist the domain's active state; a non-positive ID raises
+     * I18nInvalidArgumentException, setting the current state is a successful
+     * no-op, and a missing domain raises DomainNotFoundException.
+     *
      * @throws DomainNotFoundException
+     * @throws I18nInvalidArgumentException when id is not positive
      */
     public function setActive(int $id, bool $isActive): void
     {

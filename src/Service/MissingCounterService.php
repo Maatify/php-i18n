@@ -77,8 +77,10 @@ final readonly class MissingCounterService
     }
 
     /**
-     * Recomputes the exact-scope summary and increments the key's translated
-     * count. A missing key is a not-found error. keyId must be positive.
+     * Validate the positive key ID and exact nullable language scope before
+     * repository access, then rebuild that summary and increment the key's
+     * translated count. Null is unlocalized; valid non-null codes stay exact
+     * without normalization. A missing key raises TranslationKeyNotFoundException.
      *
      * @throws TranslationKeyNotFoundException
      * @throws InvalidLanguageCodeException
@@ -109,8 +111,10 @@ final readonly class MissingCounterService
     }
 
     /**
-     * Recomputes the exact-scope summary and decrements the key's translated
-     * count; a missing key is a fail-soft no-op. keyId must be positive.
+     * Validate the positive key ID and exact nullable language scope before
+     * repository access, then rebuild that summary and decrement the key's
+     * translated count. Null is unlocalized; valid non-null codes stay exact
+     * without normalization. A missing key remains a fail-soft no-op.
      *
      * @throws InvalidLanguageCodeException
      * @throws I18nInvalidArgumentException when keyId is not positive
@@ -140,8 +144,9 @@ final readonly class MissingCounterService
     }
 
     /**
-     * A language code was re-keyed in authoritative translations:
-     * recompute the derived rows of the old and the new exact scope.
+     * Validate both exact non-null codes before rebuilding derived rows for
+     * the old and new scopes; the supplied values are preserved without
+     * normalization.
      *
      * @throws InvalidLanguageCodeException
      */

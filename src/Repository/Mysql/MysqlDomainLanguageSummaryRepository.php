@@ -28,6 +28,10 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
      * INCREMENTAL
      * ========================================================== */
 
+    /**
+     * Increment total and missing counts on existing derived rows for this
+     * scope/domain; this does not create rows for language scopes without translations.
+     */
     public function incrementTotalKeys(string $scope, string $domain): void
     {
         $this->run(
@@ -43,12 +47,18 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
         );
     }
 
+    /** Rebuild all language rows for this scope/domain from keys and translations. */
     public function decrementTotalKeys(string $scope, string $domain): void
     {
         // safest: derived table → rebuild this scope+domain instead of guessing deltas
         $this->rebuildScopeDomain($scope, $domain);
     }
 
+    /**
+     * Rebuild this exact nullable language scope from authoritative keys and
+     * translations; null is the unlocalized scope, and a row is removed when
+     * no translation remains. The supplied non-null code is not normalized.
+     */
     public function refreshExactScope(
         string $scope,
         string $domain,
@@ -107,6 +117,11 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
         );
     }
 
+    /**
+     * Rebuild every derived row for this exact language scope from authoritative
+     * keys and translations; null selects the unlocalized scope, and no row is
+     * left when that scope has no translations. Non-null codes are not normalized.
+     */
     public function rebuildLanguageCode(?string $languageCode): void
     {
         $identity = LanguageCode::fromNullable($languageCode)->identity();
@@ -154,6 +169,7 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
      * DIRECT OPS
      * ========================================================== */
 
+    /** Clear only the derived summary table. */
     public function truncate(): void
     {
         $this->gateway->write('DELETE FROM maa_i18n_domain_language_summary', [], 'summary.truncate');
@@ -163,6 +179,10 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
      * REBUILD (SQL-Driven, authoritative tables only)
      * ========================================================== */
 
+    /**
+     * Upsert summary aggregates for language scopes present in authoritative
+     * keys and translations. The full rebuild flow clears this derived table first.
+     */
     public function rebuildAll(): void
     {
         $sql = '
@@ -202,6 +222,10 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
         $this->gateway->write($sql, [], 'summary.rebuildAll');
     }
 
+    /**
+     * Replace all derived language rows for one scope/domain from authoritative
+     * keys and translations; scopes without translations have no summary row.
+     */
     public function rebuildScopeDomain(string $scope, string $domain): void
     {
         $this->run(
@@ -257,6 +281,9 @@ final readonly class MysqlDomainLanguageSummaryRepository implements DomainLangu
      * ========================================================== */
 
     /**
+     * Read the row for this exact nullable language scope; null selects the
+     * unlocalized scope. A missing row means no translation exists for it.
+     *
      * @return array{
      *     total_keys: int,
      *     translated_count: int,

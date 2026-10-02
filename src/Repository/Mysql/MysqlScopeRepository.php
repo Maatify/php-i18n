@@ -32,6 +32,10 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         $this->support = new MysqlGovernanceTableSupport($this->gateway, 'maa_i18n_scopes');
     }
 
+    /**
+     * Read the exact scope code, returning null only when no row matches.
+     * SHARE/UPDATE locking modes require an active transaction.
+     */
     public function getByCode(string $code, LockModeEnum $lock = LockModeEnum::NONE): ?ScopeDTO
     {
         $row = $this->gateway->fetchOne(
@@ -44,6 +48,10 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         return $row === null ? null : $this->map($row);
     }
 
+    /**
+     * Read a scope by ID, returning null only when no row matches.
+     * SHARE/UPDATE locking modes require an active transaction.
+     */
     public function getById(int $id, LockModeEnum $lock = LockModeEnum::NONE): ?ScopeDTO
     {
         $row = $this->gateway->fetchOne(
@@ -56,16 +64,25 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         return $row === null ? null : $this->map($row);
     }
 
+    /** Return active scopes ordered by display position, then ID; may be empty. */
     public function listActive(): ScopeCollectionDTO
     {
         return $this->listByCondition('WHERE is_active = 1', 'scope.listActive');
     }
 
+    /** Return all scopes ordered by display position, then ID; may be empty. */
     public function listAll(): ScopeCollectionDTO
     {
         return $this->listByCondition('', 'scope.listAll');
     }
 
+    /**
+     * Return filtered scopes as a page; the unfiltered total remains the full
+     * scope population, while the filtered count reflects the criteria.
+     * Pagination and ordering are delegated to maatify/persistence.
+     *
+     * @return PageResult<ScopeDTO>
+     */
     public function search(ScopeListCriteria $criteria): PageResult
     {
         $where = [];
@@ -109,6 +126,12 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         );
     }
 
+    /**
+     * Insert a scope at the supplied display position and return its new ID.
+     * A duplicate code is classified as ScopeAlreadyExistsException.
+     *
+     * @throws ScopeAlreadyExistsException
+     */
     public function create(CreateScopeCommand $command, int $sortOrder): int
     {
         try {
@@ -135,9 +158,7 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         return $this->gateway->lastInsertId('scope.create');
     }
 
-    /**
-     * @return bool whether the SQL update changed a scope row
-     */
+    /** Apply the command's supplied metadata; true means the SQL update changed a row. */
     public function updateMetadata(UpdateScopeMetadataCommand $command): bool
     {
         $fields = [];
@@ -160,9 +181,7 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         ) > 0;
     }
 
-    /**
-     * @return bool whether the SQL update changed a scope row
-     */
+    /** Persist the active state; true means the SQL update changed a row. */
     public function setActive(int $id, bool $isActive): bool
     {
         return $this->gateway->write(
@@ -172,6 +191,7 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         ) > 0;
     }
 
+    /** Change the stored code; a duplicate code is classified as ScopeAlreadyExistsException. */
     public function changeCode(int $id, string $newCode): void
     {
         try {
@@ -189,16 +209,22 @@ final readonly class MysqlScopeRepository implements ScopeRepositoryInterface
         }
     }
 
+    /**
+     * Return the next display position; callers serialize allocation by first
+     * locking this ordering scope in their active transaction.
+     */
     public function nextPosition(): int
     {
         return $this->support->nextPosition();
     }
 
+    /** Acquire the ordering lock used to serialize creates and moves; requires an active transaction. */
     public function lockOrderingScope(): void
     {
         $this->support->lockOrderingScope();
     }
 
+    /** Delegate the move to maatify/persistence; false means the scope row is missing. */
     public function moveToPosition(int $id, int $position): bool
     {
         return $this->support->moveToPosition($id, $position);
