@@ -47,17 +47,10 @@
 
 ## Installation
 
-**I18n is in development and is not published.** There is no tag, no release and no Packagist publication, so there is nothing to `composer require` yet. Today it is an embedded Base Module: it lives in `Modules/I18n` of a Host repository, and the Host maps its PSR-4 namespace to the Artifact Root and installs the dependencies above.
+**Development / Unpublished.** This standalone repository is not published to Packagist, so there is no supported `composer require` installation yet. Repository development uses Composer from the repository root:
 
-```json
-{
-    "autoload": { "psr-4": { "Maatify\\I18n\\": "Modules/I18n/src" } },
-    "require": {
-        "maatify/exceptions": "^1.1",
-        "maatify/persistence": "^1.4",
-        "maatify/shared-common": "^1.0"
-    }
-}
+```bash
+composer install
 ```
 
 Then create the database objects once, on a fresh database, from [schema/schema.i18n.sql](schema/schema.i18n.sql). The file begins with `DROP TABLE IF EXISTS` for the seven tables, so never apply it over existing I18n data.
@@ -165,7 +158,7 @@ Six maintained examples cover every material capability and run against a dispos
 
 ## Development and Testing
 
-Every CI gate invokes a local command from the Package root (`Modules/I18n`), so each can be reproduced locally with the same verification contract. Prerequisites: PHP 8.4+, Composer, and, for the real-MySQL gates, Docker with Compose v2. `composer check:audit` needs Composer 2.10 or newer (a verification-time capability, not a consumer requirement). The disposable MySQL is defined once in [docker/mysql-integration/compose.yaml](docker/mysql-integration/compose.yaml) and driven by [scripts/ci/with-mysql.sh](scripts/ci/with-mysql.sh); Integration, examples and the consumer harness all reuse it, with run-scoped temporary credentials and teardown.
+Every CI gate invokes a local command from the standalone repository root, so each can be reproduced locally with the same verification contract. Prerequisites: PHP 8.4+, Composer, and, for the real-MySQL gates, Docker with Compose v2. `composer check:audit` needs Composer 2.10 or newer (a verification-time capability, not a consumer requirement). The disposable MySQL is defined once in [docker/mysql-integration/compose.yaml](docker/mysql-integration/compose.yaml) and driven by [scripts/ci/with-mysql.sh](scripts/ci/with-mysql.sh); Integration, examples and the consumer harness all reuse it, with run-scoped temporary credentials and teardown.
 
 ```bash
 composer install
@@ -187,7 +180,7 @@ composer verify          # canonical Package gates on the currently resolved dep
 | Examples smoke | `composer check:examples` | Examples (PHP 8.4, 8.5) |
 | Consumer Verification | `composer verify:consumer` | Consumer Verification (PHP 8.4, 8.5) |
 | Composer audit | `composer check:audit` | Audit |
-| Workflow lint | `composer check:workflows` (actionlint over every workflow of the Host repository; downloads a pinned, checksum-verified binary, or set `I18N_ACTIONLINT_USE_PATH=1`) | Workflow Lint |
+| Workflow lint | `composer check:workflows` (actionlint over standalone repository workflows; actionlint must already be available on PATH) | Workflow Lint |
 
 `composer verify` runs the canonical Package verification gate set on the dependency versions currently installed or resolved, including Style and Workflow Lint. CI runs latest-compatible and lowest-supported dependency resolutions as separate compatibility modes; neither mode is part of `composer verify`, and `composer verify` does not run `composer update`.
 
