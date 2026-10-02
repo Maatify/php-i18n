@@ -62,6 +62,8 @@
 
 Then create the database objects once, on a fresh database, from [schema/schema.i18n.sql](schema/schema.i18n.sql). The file begins with `DROP TABLE IF EXISTS` for the seven tables, so never apply it over existing I18n data.
 
+For an existing pre-S1 database, use the additive [translation type migration](schema/migrations/2026-10-02-translation-type.sql) through the Host's migration process; the Package does not provide a migration runner.
+
 ## Quick Usage
 
 ```php
@@ -70,10 +72,23 @@ $domains->create(new CreateDomainCommand('home', 'Home page'));
 $assignments->assign('web', 'home');
 
 $keyId = $writer->createKey(new CreateKeyCommand('web', 'home', 'title'));
-$writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome'));
+$writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $keyId,
+    value: 'Welcome',
+    type: null,
+));
+$richKeyId = $writer->createKey(new CreateKeyCommand('web', 'home', 'rich-copy'));
+$writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $richKeyId,
+    value: '<p>Formatted copy</p>',
+    type: 'client.rich-copy', // A token defined by this consumer; I18n assigns it no behavior.
+));
 
 $reader->getValue('en', 'web', 'home', 'title');   // 'Welcome'
 $reader->getValue('ar', 'web', 'home', 'title');   // null: exact miss, no fallback
+$reader->getTranslation('en', 'web', 'home', 'rich-copy'); // value + nullable type
 ```
 
 Complete, runnable wiring: [examples/01-core-wiring-and-first-translation.php](examples/01-core-wiring-and-first-translation.php). Walkthroughs: [docs/guides/USAGE_GUIDE.md](docs/guides/USAGE_GUIDE.md).
@@ -84,7 +99,7 @@ An overview only. The complete inventory (signatures, DTO fields, exceptions, so
 
 | Area | Types |
 |---|---|
-| Runtime reads (fail-soft) | `TranslationReadService`, `TranslationDomainReadService`, `TranslationDomainValuesDTO` |
+| Runtime reads (fail-soft) | `TranslationReadService` (`getValue()`, `getTranslation()`), `TranslationDomainReadService` (`getDomainValues()`, `getDomainTranslations()`), value-only and typed consumer DTOs |
 | Translation writes | `TranslationWriteService` (keys, translations, language-code re-key) |
 | Governance management | `I18nScopeManagementService`, `I18nDomainManagementService`, `I18nScopeDomainManagementService` |
 | Management reads | `I18nManagementReadService`, `I18nScopeReadService`, `I18nDomainReadService` with `*Criteria` inputs and paginated results |
@@ -98,6 +113,7 @@ An overview only. The complete inventory (signatures, DTO fields, exceptions, so
 
 - **Exact scope:** `getValue('ar', ...)` reads `ar` only. `null` reads the unlocalized scope only. A miss never retries elsewhere.
 - **Empty is a value:** the empty string is an authoritative translation, not a miss.
+- **Type is opaque metadata:** any valid non-null string is an exact consumer-defined token. The Package defines no type vocabulary and does not assign behavior, render or sanitize values.
 - **Codes are not normalized:** `'ar'` and `'AR'` are different; a code must be 1-16 characters and not whitespace-only. Whether a code is a real language is Host policy.
 - **Derived state:** summary tables are maintained inside the write transaction; `I18nStatsRebuilder::fullRebuild()` repairs drift.
 - **No caching, no key deletion, no fallback.**
@@ -119,7 +135,7 @@ Six maintained examples cover every material capability and run against a dispos
 
 ## Schema
 
-[schema/schema.i18n.sql](schema/schema.i18n.sql) is the only schema authority: `maa_i18n_scopes`, `maa_i18n_domains`, `maa_i18n_domain_scopes`, `maa_i18n_keys`, `maa_i18n_translations`, `maa_i18n_domain_language_summary` (derived), `maa_i18n_key_stats` (derived). Ownership and semantics: [Reference section 8](I18N_PACKAGE_REFERENCE.md#8-persistence-and-schema).
+[schema/schema.i18n.sql](schema/schema.i18n.sql) is the fresh-install schema authority: `maa_i18n_scopes`, `maa_i18n_domains`, `maa_i18n_domain_scopes`, `maa_i18n_keys`, `maa_i18n_translations`, `maa_i18n_domain_language_summary` (derived), `maa_i18n_key_stats` (derived). Existing pre-S1 databases can apply the additive [translation type migration](schema/migrations/2026-10-02-translation-type.sql). Ownership and semantics: [Reference section 8](I18N_PACKAGE_REFERENCE.md#8-persistence-and-schema).
 
 ## Documentation
 
@@ -131,7 +147,8 @@ Six maintained examples cover every material capability and run against a dispos
 | [CHANGELOG.md](CHANGELOG.md) | change history |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | component boundaries |
 | [BOOK/INDEX.md](BOOK/INDEX.md) | conceptual, deep documentation; never overrides the Reference |
-| [dcos/](dcos/) | architecture decision records ADR-018, ADR-019 |
+| [docs/decisions/](docs/decisions/DECISIONS_INDEX.md) | current decision index and ADR-020 for the nullable translation type contract |
+| [dcos/](dcos/) | legacy decision records ADR-018 and ADR-019 |
 | [llms.txt](llms.txt) | navigation for AI consumers |
 
 ## Quality Status

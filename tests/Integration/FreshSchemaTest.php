@@ -129,6 +129,63 @@ final class FreshSchemaTest extends MysqlIntegrationTestCase
         self::assertSame('0', self::text($identity[0]['c']), 'no Host language id anywhere');
     }
 
+    public function testAdr020NullableTypeColumnIsExactAndHasNoIdentityIndex(): void
+    {
+        $column = $this->rows(
+            "SELECT COLUMN_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH, CHARACTER_SET_NAME,
+                    COLLATION_NAME, COLUMN_COMMENT
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = 'maa_i18n_translations' AND COLUMN_NAME = 'type'",
+        );
+
+        self::assertCount(1, $column);
+        self::assertSame('varchar(32)', strtolower(self::text($column[0]['COLUMN_TYPE'])));
+        self::assertSame('YES', $column[0]['IS_NULLABLE']);
+        self::assertSame('32', self::text($column[0]['CHARACTER_MAXIMUM_LENGTH']));
+        self::assertSame('utf8mb4', $column[0]['CHARACTER_SET_NAME']);
+        self::assertSame('utf8mb4_bin', $column[0]['COLLATION_NAME']);
+        self::assertStringContainsString('optional consumer-defined type metadata', self::text($column[0]['COLUMN_COMMENT']));
+        self::assertStringContainsString('ADR-020', self::text($column[0]['COLUMN_COMMENT']));
+
+        $indexes = $this->rows(
+            "SELECT INDEX_NAME FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = 'maa_i18n_translations' AND COLUMN_NAME = 'type'",
+        );
+        self::assertSame([], $indexes, 'type must not participate in translation identity or lookup indexes');
+
+        $identity = $this->rows(
+            "SELECT COLUMN_NAME FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = 'maa_i18n_translations'
+               AND INDEX_NAME = 'uq_maa_i18n_translation_unique'
+             ORDER BY SEQ_IN_INDEX",
+        );
+        self::assertSame([
+            ['COLUMN_NAME' => 'key_id'],
+            ['COLUMN_NAME' => 'language_code_identity'],
+        ], $identity, 'the established translation identity stays unchanged');
+
+        $keyId = $this->createKey('ct', 'home', 'type-check');
+        foreach (['', '   ', "\t\n", "\x0B\x0C", "\u{0085}", "\u{00A0}", "\u{2028}", str_repeat('x', 33)] as $invalidType) {
+            try {
+                $stmt = $this->pdo()->prepare(
+                    'INSERT INTO maa_i18n_translations (key_id, language_code, value, type)
+                     VALUES (:key_id, :language_code, :value, :type)',
+                );
+                $stmt->execute([
+                    'key_id' => $keyId,
+                    'language_code' => 'ar',
+                    'value' => 'value',
+                    'type' => $invalidType,
+                ]);
+                self::fail('The database must reject invalid type metadata.');
+            } catch (\PDOException) {
+                self::assertSame(0, $this->scalarInt(
+                    "SELECT COUNT(*) FROM maa_i18n_translations WHERE key_id = " . $keyId,
+                ));
+            }
+        }
+    }
+
     public function testNoLegacyUnprefixedTableExists(): void
     {
         $legacy = $this->rows("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME LIKE 'i18n\\_%'");

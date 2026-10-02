@@ -6,6 +6,8 @@ namespace Maatify\I18n\Consumer\Service;
 
 use Maatify\I18n\Repository\TranslationKeyRepositoryInterface;
 use Maatify\I18n\Repository\TranslationRepositoryInterface;
+use Maatify\I18n\Consumer\DTO\TranslationDomainTranslationsDTO;
+use Maatify\I18n\Consumer\DTO\TranslationValueDTO;
 use Maatify\I18n\Consumer\DTO\TranslationDomainValuesDTO;
 use Maatify\I18n\Exception\InvalidLanguageCodeException;
 use Maatify\I18n\Service\I18nGovernancePolicyService;
@@ -36,15 +38,36 @@ final readonly class TranslationDomainReadService
         string $scope,
         string $domain,
     ): TranslationDomainValuesDTO {
+        $translations = $this->getDomainTranslations($languageCode, $scope, $domain);
+        $values = [];
+        foreach ($translations->translations as $keyPart => $translation) {
+            $values[$keyPart] = $translation->value;
+        }
+
+        return new TranslationDomainValuesDTO($values);
+    }
+
+    /**
+     * Reads all available values and types for one domain and exact language scope.
+     *
+     * Missing rows are absent from the result. An empty value remains present
+     * with its optional type. Invalid codes or unreadable domains return an
+     * empty DTO; no fallback is applied.
+     */
+    public function getDomainTranslations(
+        ?string $languageCode,
+        string $scope,
+        string $domain,
+    ): TranslationDomainTranslationsDTO {
         try {
             $exactCode = LanguageCode::fromNullable($languageCode);
         } catch (InvalidLanguageCodeException) {
-            return new TranslationDomainValuesDTO([]);
+            return new TranslationDomainTranslationsDTO([]);
         }
 
         // 1) Enforce governance
         if (!$this->policyService->isScopeAndDomainReadable($scope, $domain)) {
-            return new TranslationDomainValuesDTO([]);
+            return new TranslationDomainTranslationsDTO([]);
         }
 
         // 2) Resolve keys for (scope + domain)
@@ -54,20 +77,23 @@ final readonly class TranslationDomainReadService
         );
 
         if ($keys->isEmpty()) {
-            return new TranslationDomainValuesDTO([]);
+            return new TranslationDomainTranslationsDTO([]);
         }
 
-        $values = [];
+        $translations = [];
 
         foreach ($keys->items as $keyDto) {
             $translation = $this->translationRepository
                 ->getByLanguageAndKey($exactCode->value(), $keyDto->id);
 
             if ($translation !== null) {
-                $values[$keyDto->key] = $translation->value;
+                $translations[$keyDto->key] = new TranslationValueDTO(
+                    $translation->value,
+                    $translation->type,
+                );
             }
         }
 
-        return new TranslationDomainValuesDTO($values);
+        return new TranslationDomainTranslationsDTO($translations);
     }
 }

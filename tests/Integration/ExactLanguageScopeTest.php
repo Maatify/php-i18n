@@ -24,9 +24,9 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testExactArReadReturnsArOnly(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('ar', $keyId, 'عنوان');
-        $this->upsert('en', $keyId, 'Title');
-        $this->upsert(null, $keyId, 'Neutral');
+        $this->upsert('ar', $keyId, 'عنوان', null);
+        $this->upsert('en', $keyId, 'Title', null);
+        $this->upsert(null, $keyId, 'Neutral', null);
 
         self::assertSame('عنوان', $this->reader->getValue('ar', 'ct', 'home', 'title'));
     }
@@ -34,8 +34,8 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testExactEnReadReturnsEnOnly(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('ar', $keyId, 'عنوان');
-        $this->upsert('en', $keyId, 'Title');
+        $this->upsert('ar', $keyId, 'عنوان', null);
+        $this->upsert('en', $keyId, 'Title', null);
 
         self::assertSame('Title', $this->reader->getValue('en', 'ct', 'home', 'title'));
     }
@@ -43,8 +43,8 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testExactNullReadReturnsUnlocalizedScopeOnly(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('ar', $keyId, 'عنوان');
-        $this->upsert(null, $keyId, 'Neutral');
+        $this->upsert('ar', $keyId, 'عنوان', null);
+        $this->upsert(null, $keyId, 'Neutral', null);
 
         self::assertSame('Neutral', $this->reader->getValue(null, 'ct', 'home', 'title'));
     }
@@ -52,7 +52,7 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testMissingArDoesNotFallBackToNull(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert(null, $keyId, 'Neutral');
+        $this->upsert(null, $keyId, 'Neutral', null);
 
         self::assertNull($this->reader->getValue('ar', 'ct', 'home', 'title'));
     }
@@ -60,7 +60,7 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testMissingArDoesNotFallBackToEn(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('en', $keyId, 'Title');
+        $this->upsert('en', $keyId, 'Title', null);
 
         self::assertNull($this->reader->getValue('ar', 'ct', 'home', 'title'));
         self::assertSame([], $this->domainReader->getDomainValues('ar', 'ct', 'home')->all());
@@ -69,8 +69,8 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testNullDoesNotFallBackToALanguageCode(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('ar', $keyId, 'عنوان');
-        $this->upsert('en', $keyId, 'Title');
+        $this->upsert('ar', $keyId, 'عنوان', null);
+        $this->upsert('en', $keyId, 'Title', null);
 
         self::assertNull($this->reader->getValue(null, 'ct', 'home', 'title'));
         self::assertSame([], $this->domainReader->getDomainValues(null, 'ct', 'home')->all());
@@ -80,9 +80,9 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     {
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
-        $this->upsert('ar', $a, 'A-ar');
-        $this->upsert('en', $b, 'B-en');
-        $this->upsert(null, $a, 'A-null');
+        $this->upsert('ar', $a, 'A-ar', null);
+        $this->upsert('en', $b, 'B-en', null);
+        $this->upsert(null, $a, 'A-null', null);
 
         self::assertSame(['a' => 'A-ar'], $this->domainReader->getDomainValues('ar', 'ct', 'home')->all());
         self::assertSame(['b' => 'B-en'], $this->domainReader->getDomainValues('en', 'ct', 'home')->all());
@@ -95,7 +95,7 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     {
         // There is no `languages` table in this schema: any lookup would fail loudly.
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('xx-unknown', $keyId, 'Anything');
+        $this->upsert('xx-unknown', $keyId, 'Anything', null);
 
         self::assertSame('Anything', $this->reader->getValue('xx-unknown', 'ct', 'home', 'title'));
         self::assertSame(0, $this->scalarInt("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'languages'"));
@@ -104,9 +104,9 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testCodeIsStoredExactlyWithoutNormalization(): void
     {
         $keyId = $this->createKey('ct', 'home', 'title');
-        $this->upsert('ar-EG', $keyId, 'Egypt');
-        $this->upsert('AR', $keyId, 'Upper');
-        $this->upsert('ar', $keyId, 'Lower');
+        $this->upsert('ar-EG', $keyId, 'Egypt', null);
+        $this->upsert('AR', $keyId, 'Upper', null);
+        $this->upsert('ar', $keyId, 'Lower', null);
 
         self::assertSame('Egypt', $this->reader->getValue('ar-EG', 'ct', 'home', 'title'));
         self::assertNull($this->reader->getValue('ar-eg', 'ct', 'home', 'title'));
@@ -120,7 +120,7 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
 
         foreach (['', '   ', str_repeat('a', 17)] as $bad) {
             try {
-                $this->upsert($bad, $keyId, 'x');
+                $this->upsert($bad, $keyId, 'x', null);
                 self::fail('Expected InvalidLanguageCodeException for code of length ' . strlen($bad));
             } catch (InvalidLanguageCodeException) {
                 $this->addToAssertionCount(1);
@@ -135,7 +135,7 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testWriteForAnUnknownKeyStillFailsHard(): void
     {
         $this->expectException(TranslationKeyNotFoundException::class);
-        $this->upsert('ar', 999999, 'x');
+        $this->upsert('ar', 999999, 'x', null);
     }
 
     // ── persistence identity ───────────────────────────────────────────────
@@ -176,16 +176,16 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     {
         $keyId = $this->createKey('ct', 'home', 'title');
 
-        $nullId = $this->upsert(null, $keyId, 'n');
-        $arId = $this->upsert('ar', $keyId, 'a');
-        $enId = $this->upsert('en', $keyId, 'e');
+        $nullId = $this->upsert(null, $keyId, 'n', null);
+        $arId = $this->upsert('ar', $keyId, 'a', null);
+        $enId = $this->upsert('en', $keyId, 'e', null);
 
         self::assertCount(3, array_unique([$nullId, $arId, $enId]));
         self::assertSame(3, $this->scalarInt('SELECT COUNT(*) FROM maa_i18n_translations'));
 
         // Upserting the same exact scope updates the same row, never adds one.
-        self::assertSame($arId, $this->upsert('ar', $keyId, 'a2'));
-        self::assertSame($nullId, $this->upsert(null, $keyId, 'n2'));
+        self::assertSame($arId, $this->upsert('ar', $keyId, 'a2', null));
+        self::assertSame($nullId, $this->upsert(null, $keyId, 'n2', null));
         self::assertSame(3, $this->scalarInt('SELECT COUNT(*) FROM maa_i18n_translations'));
         self::assertSame('a2', $this->reader->getValue('ar', 'ct', 'home', 'title'));
         self::assertSame('n2', $this->reader->getValue(null, 'ct', 'home', 'title'));
@@ -203,10 +203,10 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
         self::assertNull($this->summary->getRow('ct', 'home', 'ar'));
         self::assertSame(0, $this->scalarInt('SELECT COUNT(*) FROM maa_i18n_domain_language_summary'));
 
-        $this->upsert('ar', $a, 'x');
-        $this->upsert('ar', $b, 'x');
-        $this->upsert('en', $a, 'x');
-        $this->upsert(null, $c, 'x');
+        $this->upsert('ar', $a, 'x', null);
+        $this->upsert('ar', $b, 'x', null);
+        $this->upsert('en', $a, 'x', null);
+        $this->upsert(null, $c, 'x', null);
 
         self::assertSame(['total_keys' => 3, 'translated_count' => 2, 'missing_count' => 1], $this->summary->getRow('ct', 'home', 'ar'));
         self::assertSame(['total_keys' => 3, 'translated_count' => 1, 'missing_count' => 2], $this->summary->getRow('ct', 'home', 'en'));
@@ -232,8 +232,8 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
 
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
-        $this->upsert('ar', $a, 'x');
-        $this->upsert('ar', $b, 'x');
+        $this->upsert('ar', $a, 'x', null);
+        $this->upsert('ar', $b, 'x', null);
 
         $this->renameKey($a, 'ct', 'cart', 'a');
 
@@ -245,10 +245,10 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     {
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
-        $this->upsert('ar', $a, 'x');
-        $this->upsert('en', $a, 'x');
-        $this->upsert('en', $b, 'x');
-        $this->upsert(null, $b, 'x');
+        $this->upsert('ar', $a, 'x', null);
+        $this->upsert('en', $a, 'x', null);
+        $this->upsert('en', $b, 'x', null);
+        $this->upsert(null, $b, 'x', null);
 
         $incremental = $this->summarySnapshot();
         self::assertNotSame([], $incremental);
@@ -273,9 +273,9 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
 
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
-        $this->upsert('ar', $a, 'x');
-        $this->upsert('ar', $b, 'x');
-        $this->upsert('en', $a, 'x');
+        $this->upsert('ar', $a, 'x', null);
+        $this->upsert('ar', $b, 'x', null);
+        $this->upsert('en', $a, 'x', null);
 
         $reader = new MysqlI18nOperationalStatsRepository($pdo);
 
@@ -295,9 +295,9 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     {
         $a = $this->createKey('ct', 'home', 'a');
         $b = $this->createKey('ct', 'home', 'b');
-        $this->upsert('ar', $a, 'A');
-        $this->upsert('ar', $b, 'B');
-        $this->upsert('en', $a, 'E');
+        $this->upsert('ar', $a, 'A', null);
+        $this->upsert('ar', $b, 'B', null);
+        $this->upsert('en', $a, 'E', null);
 
         self::assertSame(2, $this->writer->rekeyLanguageCode('ar', 'ar-EG'));
 
@@ -314,8 +314,8 @@ final class ExactLanguageScopeTest extends MysqlIntegrationTestCase
     public function testRekeyIntoACodeThatAlreadyOwnsTranslationsFailsAndChangesNothing(): void
     {
         $a = $this->createKey('ct', 'home', 'a');
-        $this->upsert('ar', $a, 'A');
-        $this->upsert('en', $a, 'E');
+        $this->upsert('ar', $a, 'A', null);
+        $this->upsert('en', $a, 'E', null);
 
         try {
             $this->writer->rekeyLanguageCode('ar', 'en');

@@ -28,9 +28,9 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 
 ### `maa_i18n_translations`
 *   **Purpose:** Text values, one row per exact `(key_id, language_code)`.
-*   **Columns:** `id`, `key_id` (FK -> maa_i18n_keys), `language_code` (`VARCHAR(16) NULL`, binary collation), `language_code_identity` (generated `COALESCE(language_code, '')`), `value`, `created_at`, `updated_at`.
-*   **Constraint:** Unique `(key_id, language_code_identity)` (NULL-safe); CHECK: `language_code` is NULL or non-empty/non-whitespace and <= 16 chars.
-*   **Semantics:** `NULL` = exact unlocalized scope; a code = exact scope of that code. No fallback, default or wildcard. No FK/JOIN to any Host language table.
+*   **Columns:** `id`, `key_id` (FK -> maa_i18n_keys), `language_code` (`VARCHAR(16) NULL`, binary collation), `language_code_identity` (generated `COALESCE(language_code, '')`), `value`, nullable exact `type` (`VARCHAR(32)`, binary collation), `created_at`, `updated_at`.
+*   **Constraint:** Unique `(key_id, language_code_identity)` (NULL-safe); CHECK: `language_code` is NULL or non-empty/non-whitespace and <= 16 chars; `type` is NULL or non-empty/non-whitespace and <= 32 chars. `type` has no index and is not part of identity.
+*   **Semantics:** `NULL` language code = exact unlocalized scope; a code = exact scope of that code. `type` is optional opaque consumer-defined metadata; `value` remains authoritative and is not interpreted. No fallback, default or wildcard. No FK/JOIN to any Host language table.
 
 ### `maa_i18n_domain_language_summary`
 *   **Purpose:** Synchronous exact-scope aggregation (Derived, non-authoritative).
@@ -43,7 +43,7 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 *   **Columns:** `id` (PK), `key_id` (unique FK -> maa_i18n_keys: exactly one stats row per key), `translated_count`, `updated_at`.
 
 ### Schema authority
-`schema/schema.i18n.sql` is the only schema authority: seven tables, an `id` primary key on each, meaningful column comments, documented policies. A Host deployment copy is a projection, never a second design source.
+`schema/schema.i18n.sql` is the fresh-install schema authority: seven tables, an `id` primary key on each, meaningful column comments, documented policies. The additive [S1 migration](schema/migrations/2026-10-02-translation-type.sql) upgrades the exact pre-S1 schema. A Host deployment copy is a projection, never a second design source.
 
 ## 1.1 Source topology
 
@@ -58,7 +58,7 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 ### Management services (`Management/Service`)
 *   `I18nScopeManagementService`, `I18nDomainManagementService`: create (appended to the display order), metadata, active state, **code change**, ordering. A code change locks the governance row `FOR UPDATE`, checks usage with locking reads, then changes the code in one transaction; every usage-creating mutation takes the compatible SHARE locks (scope -> domain -> mapping), so "unused -> usage created -> code changed" can never orphan a reference. Ordering is `maatify/persistence` `ScopedOrderingManager`.
 *   `I18nScopeDomainManagementService`: assign / unassign with deterministic lock order; the UNIQUE `(scope_code, domain_code)` is the duplicate authority.
-*   `TranslationWriteService`: key create / rename / description, translation upsert / delete, language-code re-key. Duplicate-key races end in `TranslationKeyAlreadyExistsException` (MySQL driver code 1062 only; any other failure propagates unchanged).
+*   `TranslationWriteService`: key create / rename / description, atomic translation value/type upsert / delete, language-code re-key that preserves type. Type-only writes do not change derived completeness counts. Duplicate-key races end in `TranslationKeyAlreadyExistsException` (MySQL driver code 1062 only; any other failure propagates unchanged).
 *   `I18nScopeReadService`, `I18nDomainReadService`: fail-soft bounded governance lists (all / active scopes; domains assigned to a scope).
 *   `I18nManagementReadService`: details and **paginated** lists (`PageResult` of `maatify/persistence`; I18n owns only filters / search / mapping) of scopes, domains, assignments, keys, per-key translation summaries, translation grids, per-language values. Every language-facing input is an exact code supplied by the Host.
 *   `I18nOperationalReadService`: package-owned counts and coverage facts (key totals, exact-code translated counts, per-scope / per-domain coverage, derived-row count) so the Host never reconstructs I18n semantics by SQL.
@@ -80,12 +80,12 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 
 ### `TranslationReadService`
 *   **Role:** The Reader (Single Value).
-*   **Responsibility:** Fetches one key for an exact language scope. **No fallback**: `null` code reads the unlocalized scope only, a code reads that code only.
+*   **Responsibility:** Fetches one key for an exact language scope through value-only (`getValue`) and rich (`getTranslation`) reads. **No fallback**: `null` code reads the unlocalized scope only, a code reads that code only.
 *   **Behavior:** Fail-Soft (Returns null).
 
 ### `TranslationDomainReadService`
 *   **Role:** The Reader (Bulk).
-*   **Responsibility:** Fetches entire domains for UI loading, exact scope only (no fallback).
+*   **Responsibility:** Fetches entire domains through value-only (`getDomainValues`) and rich (`getDomainTranslations`) reads, exact scope only (no fallback).
 *   **Behavior:** Fail-Soft (Returns empty DTO).
 
 ### `MissingCounterService`
@@ -101,7 +101,7 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 ## 3. Consistency Model
 
 The module utilizes a **Strong Consistency** model.
-*   Writes to `maa_i18n_keys` or `maa_i18n_translations` trigger synchronous updates to `maa_i18n_domain_language_summary`.
+*   Writes that create or delete translations trigger synchronous updates to `maa_i18n_domain_language_summary`; type-only metadata changes do not alter completeness or key counters.
 *   No background queues or eventual consistency.
 
 ## 4. Dependencies

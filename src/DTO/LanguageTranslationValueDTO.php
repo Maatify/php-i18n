@@ -7,7 +7,8 @@ namespace Maatify\I18n\DTO;
 use JsonSerializable;
 
 /**
- * One key with its translation in one exact language scope (null = none).
+ * One key with its translation value and type in one exact language scope.
+ * A null translation ID means the exact scope has no row.
  */
 
 final readonly class LanguageTranslationValueDTO implements JsonSerializable
@@ -19,6 +20,7 @@ final readonly class LanguageTranslationValueDTO implements JsonSerializable
         public string $keyPart,
         public ?int $translationId,
         public ?string $value,
+        public ?string $type,
         public string $createdAt,
         public ?string $updatedAt,
     ) {}
@@ -35,6 +37,7 @@ final readonly class LanguageTranslationValueDTO implements JsonSerializable
             'key_part' => $this->keyPart,
             'translation_id' => $this->translationId,
             'value' => $this->value,
+            'type' => $this->type,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
         ];

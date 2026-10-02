@@ -31,6 +31,7 @@ use Maatify\I18n\Management\Command\CreateKeyCommand;
 use Maatify\I18n\Management\Command\CreateScopeCommand;
 use Maatify\I18n\Management\Command\UpsertTranslationCommand;
 use Maatify\I18n\Management\Criteria\DomainTranslationGridCriteria;
+use Maatify\I18n\Management\Criteria\LanguageTranslationValuesCriteria;
 use Maatify\I18n\Management\Service\I18nDomainManagementService;
 use Maatify\I18n\Management\Service\I18nManagementReadService;
 use Maatify\I18n\Management\Service\I18nOperationalReadService;
@@ -290,11 +291,39 @@ try {
         static fn() => $writer->createKey(new CreateKeyCommand('web', 'home', 'title')),
     );
 
-    $writer->upsertTranslation(new UpsertTranslationCommand('ar', $keyId, 'مرحبا'));
-    $writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome'));
-    $writer->upsertTranslation(new UpsertTranslationCommand('fr', $keyId, ''));
-    $writer->upsertTranslation(new UpsertTranslationCommand(null, $keyId, 'neutral'));
-    $writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome back'));
+    $consumerType = 'consumer.Custom-Type ';
+    $unlocalizedType = 'client.rich-copy';
+
+    $writer->upsertTranslation(new UpsertTranslationCommand(
+        languageCode: 'ar',
+        keyId: $keyId,
+        value: 'مرحبا',
+        type: $consumerType,
+    ));
+    $writer->upsertTranslation(new UpsertTranslationCommand(
+        languageCode: 'en',
+        keyId: $keyId,
+        value: 'Welcome',
+        type: null,
+    ));
+    $writer->upsertTranslation(new UpsertTranslationCommand(
+        languageCode: 'fr',
+        keyId: $keyId,
+        value: '',
+        type: null,
+    ));
+    $writer->upsertTranslation(new UpsertTranslationCommand(
+        languageCode: null,
+        keyId: $keyId,
+        value: 'neutral',
+        type: $unlocalizedType,
+    ));
+    $writer->upsertTranslation(new UpsertTranslationCommand(
+        languageCode: 'en',
+        keyId: $keyId,
+        value: 'Welcome back',
+        type: null,
+    ));
 
     // -----------------------------------------------------------------------
     // 6. Exact reads: observable results.
@@ -309,9 +338,39 @@ try {
     same('exact missing: unknown key', null, $reader->getValue('ar', 'web', 'home', 'missing'));
     same('fail-soft: invalid code reads as missing', null, $reader->getValue('   ', 'web', 'home', 'title'));
     same(
+        'rich single read preserves an exact consumer-defined token',
+        ['value' => 'مرحبا', 'type' => $consumerType],
+        $reader->getTranslation('ar', 'web', 'home', 'title')?->jsonSerialize(),
+    );
+    same(
+        'rich single read preserves a null type on an existing row',
+        ['value' => 'Welcome back', 'type' => null],
+        $reader->getTranslation('en', 'web', 'home', 'title')?->jsonSerialize(),
+    );
+    same(
+        'value-only compatibility read remains a string',
+        'Welcome back',
+        $reader->getValue('en', 'web', 'home', 'title'),
+    );
+    same(
+        'rich single read keeps the unlocalized scope exact',
+        ['value' => 'neutral', 'type' => $unlocalizedType],
+        $reader->getTranslation(null, 'web', 'home', 'title')?->jsonSerialize(),
+    );
+    same(
         'bulk domain read returns the exact scope only',
         ['title' => 'مرحبا'],
         $domainReader->getDomainValues('ar', 'web', 'home')->all(),
+    );
+    same(
+        'typed bulk read preserves the consumer-defined token',
+        ['value' => 'مرحبا', 'type' => $consumerType],
+        $domainReader->getDomainTranslations('ar', 'web', 'home')->get('title')?->jsonSerialize(),
+    );
+    same(
+        'typed bulk read keeps a null type on an existing row',
+        ['value' => 'Welcome back', 'type' => null],
+        $domainReader->getDomainTranslations('en', 'web', 'home')->get('title')?->jsonSerialize(),
     );
     same(
         'bulk domain read of an ungoverned domain is empty',
@@ -331,25 +390,35 @@ try {
     throws(
         'unknown key identity on write',
         TranslationKeyNotFoundException::class,
-        static fn() => $writer->upsertTranslation(new UpsertTranslationCommand('ar', 999999, 'x')),
+        static fn() => $writer->upsertTranslation(new UpsertTranslationCommand(
+            languageCode: 'ar',
+            keyId: 999999,
+            value: 'x',
+            type: null,
+        )),
     );
     throws(
         'an invalid code is refused at command construction',
         InvalidLanguageCodeException::class,
-        static fn() => new UpsertTranslationCommand(str_repeat('x', 17), $keyId, 'x'),
+        static fn() => new UpsertTranslationCommand(
+            languageCode: str_repeat('x', 17),
+            keyId: $keyId,
+            value: 'x',
+            type: null,
+        ),
     );
 
     $persisted = rows(
         $pdo,
-        'SELECT language_code, value FROM maa_i18n_translations ORDER BY language_code_identity',
+        'SELECT language_code, value, type FROM maa_i18n_translations ORDER BY language_code_identity',
     );
     same(
         'persisted rows are exactly the four exact scopes',
         ([
-            ['language_code' => null, 'value' => 'neutral'],
-            ['language_code' => 'ar', 'value' => 'مرحبا'],
-            ['language_code' => 'en', 'value' => 'Welcome back'],
-            ['language_code' => 'fr', 'value' => ''],
+            ['language_code' => null, 'value' => 'neutral', 'type' => $unlocalizedType],
+            ['language_code' => 'ar', 'value' => 'مرحبا', 'type' => $consumerType],
+            ['language_code' => 'en', 'value' => 'Welcome back', 'type' => null],
+            ['language_code' => 'fr', 'value' => '', 'type' => null],
         ]),
         $persisted,
     );
@@ -366,11 +435,21 @@ try {
         ['ar', 'de'],
     ));
     $gridValues = [];
+    $gridTypes = [];
+    $gridIds = [];
     foreach ($grid->data as $row) {
         $gridValues[$row->languageCode] = $row->value;
+        $gridTypes[$row->languageCode] = $row->type;
+        $gridIds[$row->languageCode] = $row->translationId;
     }
     ksort($gridValues);
     same('management read: grid marks a missing translation as null', ['ar' => 'مرحبا', 'de' => null], $gridValues);
+    same('management read: grid exposes persisted consumer token', $consumerType, $gridTypes['ar']);
+    same('management read: grid distinguishes missing row from nullable type', [null, null], [$gridIds['de'], $gridTypes['de']]);
+
+    $languageRows = $managementRead->pageLanguageTranslationValues(new LanguageTranslationValuesCriteria('en'));
+    same('management read: per-language row exposes persisted nullable type', null, $languageRows->data[0]->type);
+    same('management read: per-language row distinguishes an existing translation', true, $languageRows->data[0]->translationId !== null);
 
     // -----------------------------------------------------------------------
     // 8. Transaction semantics and language-code identity migration.
@@ -390,6 +469,11 @@ try {
     same('re-key moves every row of the old code', 1, $writer->rekeyLanguageCode('ar', 'ar-EG'));
     same('re-key: old code is empty afterwards', null, $reader->getValue('ar', 'web', 'home', 'title'));
     same('re-key: new code owns the value', 'مرحبا', $reader->getValue('ar-EG', 'web', 'home', 'title'));
+    same(
+        're-key preserves the exact consumer-defined token',
+        ['value' => 'مرحبا', 'type' => $consumerType],
+        $reader->getTranslation('ar-EG', 'web', 'home', 'title')?->jsonSerialize(),
+    );
     throws(
         're-key onto an occupied code is refused',
         LanguageCodeAlreadyInUseException::class,

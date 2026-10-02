@@ -207,7 +207,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
             filteredCountSql: 'SELECT COUNT(*) ' . $from($filteredCodeSql) . $whereSql,
             filteredCountParams: $filterParams + $filteredCodeParams,
             dataSql: 'SELECT t.id AS translation_id, k.id AS key_id, k.key_part, k.description,
-                             lc.language_code, t.value ' . $from($dataCodeSql) . $whereSql,
+                             lc.language_code, t.value, t.type ' . $from($dataCodeSql) . $whereSql,
             dataParams: $filterParams + $dataCodeParams,
         );
 
@@ -234,6 +234,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
                 Row::nullableString($row, 'description'),
                 Row::string($row, 'language_code'),
                 Row::nullableString($row, 'value'),
+                Row::nullableString($row, 'type'),
             ),
         );
     }
@@ -290,7 +291,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
             filteredCountSql: 'SELECT COUNT(*) ' . $from . $whereSql,
             filteredCountParams: $filterParams + $joinParams,
             dataSql: 'SELECT k.id AS key_id, k.scope, k.domain, k.key_part,
-                             t.id AS translation_id, t.value,
+                             t.id AS translation_id, t.value, t.type,
                              COALESCE(t.created_at, k.created_at) AS created_at,
                              t.updated_at ' . $from . $whereSql,
             dataParams: $filterParams + $joinParams,
@@ -321,6 +322,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
                 Row::string($row, 'key_part'),
                 Row::nullableInt($row, 'translation_id'),
                 Row::nullableString($row, 'value'),
+                Row::nullableString($row, 'type'),
                 Row::string($row, 'created_at'),
                 Row::nullableString($row, 'updated_at'),
             ),

@@ -87,8 +87,18 @@ $assignments->assign('web', 'home');
 
 // 5. A key, then exact translations of it.
 $keyId = $writer->createKey(new CreateKeyCommand('web', 'home', 'title', 'Title of the home page'));
-$writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome'));
-$writer->upsertTranslation(new UpsertTranslationCommand('ar', $keyId, 'مرحبا'));
+$writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $keyId,
+    value: 'Welcome',
+    type: null,
+));
+$writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'ar',
+    keyId: $keyId,
+    value: 'مرحبا',
+    type: null,
+));
 
 // 6. Exact reads. The language code is whatever your application uses.
 example_expect('reads the English value', 'Welcome', $reader->getValue('en', 'web', 'home', 'title'));

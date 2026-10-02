@@ -167,9 +167,14 @@ abstract class MysqlIntegrationTestCase extends TestCase
         $this->writer->renameKey(new RenameKeyCommand($keyId, $scope, $domain, $key));
     }
 
-    protected function upsert(?string $languageCode, int $keyId, string $value): int
+    protected function upsert(?string $languageCode, int $keyId, string $value, ?string $type): int
     {
-        return $this->writer->upsertTranslation(new UpsertTranslationCommand($languageCode, $keyId, $value));
+        return $this->writer->upsertTranslation(new UpsertTranslationCommand(
+            languageCode: $languageCode,
+            keyId: $keyId,
+            value: $value,
+            type: $type,
+        ));
     }
 
     /**

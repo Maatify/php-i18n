@@ -8,7 +8,7 @@ use JsonSerializable;
 
 /**
  * One (key, exact language code) cell of a domain translation grid.
- * `value === null` means no translation row exists for that exact code.
+ * A null translation ID means no row exists; an existing row may have a null type.
  */
 
 final readonly class TranslationGridRowDTO implements JsonSerializable
@@ -20,6 +20,7 @@ final readonly class TranslationGridRowDTO implements JsonSerializable
         public ?string $description,
         public string $languageCode,
         public ?string $value,
+        public ?string $type,
     ) {}
 
     /**
@@ -34,6 +35,7 @@ final readonly class TranslationGridRowDTO implements JsonSerializable
             'description' => $this->description,
             'language_code' => $this->languageCode,
             'value' => $this->value,
+            'type' => $this->type,
         ];
     }
 }

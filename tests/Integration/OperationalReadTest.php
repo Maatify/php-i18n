@@ -38,12 +38,12 @@ final class OperationalReadTest extends MysqlIntegrationTestCase
         $c1 = $this->createKey('ct', 'cart', 'c1');
         $x1 = $this->createKey('ad', 'auth', 'x1');
 
-        $this->upsert('ar', $h1, 'x');
-        $this->upsert('ar', $h2, 'x');
-        $this->upsert('en', $h1, 'x');
-        $this->upsert('ar', $a1, 'x');
-        $this->upsert(null, $c1, 'x');
-        $this->upsert('AR', $x1, 'x'); // another exact code than 'ar'
+        $this->upsert('ar', $h1, 'x', null);
+        $this->upsert('ar', $h2, 'x', null);
+        $this->upsert('en', $h1, 'x', null);
+        $this->upsert('ar', $a1, 'x', null);
+        $this->upsert(null, $c1, 'x', null);
+        $this->upsert('AR', $x1, 'x', null); // another exact code than 'ar'
     }
 
     public function testTotalsAndGroupings(): void

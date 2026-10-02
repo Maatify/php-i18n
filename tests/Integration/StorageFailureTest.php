@@ -168,6 +168,6 @@ final class StorageFailureTest extends MysqlIntegrationTestCase
 
         // key 999999 does not exist -> the FK rejects the row at execute()
         $this->expectException(I18nStorageException::class);
-        $repository->upsert('ar', 999999, 'value');
+        $repository->upsert('ar', 999999, 'value', null);
     }
 }
