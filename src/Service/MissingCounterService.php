@@ -8,7 +8,9 @@ use Maatify\I18n\Repository\DomainLanguageSummaryRepositoryInterface;
 use Maatify\I18n\Repository\KeyStatsRepositoryInterface;
 use Maatify\I18n\Repository\TranslationKeyRepositoryInterface;
 use Maatify\I18n\Exception\I18nInvalidArgumentException;
+use Maatify\I18n\Exception\InvalidLanguageCodeException;
 use Maatify\I18n\Exception\TranslationKeyNotFoundException;
+use Maatify\I18n\ValueObject\LanguageCode;
 
 /**
  * Maintains the package-owned derived key and translation counters as authoritative keys and translations change.
@@ -79,6 +81,7 @@ final readonly class MissingCounterService
      * count. A missing key is a not-found error. keyId must be positive.
      *
      * @throws TranslationKeyNotFoundException
+     * @throws InvalidLanguageCodeException
      * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function onTranslationCreated(
@@ -86,6 +89,7 @@ final readonly class MissingCounterService
         int $keyId,
     ): void {
         $this->assertPositiveKeyId($keyId);
+        LanguageCode::fromNullable($languageCode);
 
         $key = $this->keyRepository->getById($keyId);
 
@@ -108,6 +112,7 @@ final readonly class MissingCounterService
      * Recomputes the exact-scope summary and decrements the key's translated
      * count; a missing key is a fail-soft no-op. keyId must be positive.
      *
+     * @throws InvalidLanguageCodeException
      * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function onTranslationDeleted(
@@ -115,6 +120,7 @@ final readonly class MissingCounterService
         int $keyId,
     ): void {
         $this->assertPositiveKeyId($keyId);
+        LanguageCode::fromNullable($languageCode);
 
         $key = $this->keyRepository->getById($keyId);
 
@@ -136,11 +142,16 @@ final readonly class MissingCounterService
     /**
      * A language code was re-keyed in authoritative translations:
      * recompute the derived rows of the old and the new exact scope.
+     *
+     * @throws InvalidLanguageCodeException
      */
     public function onLanguageCodeRekeyed(
         string $oldCode,
         string $newCode,
     ): void {
+        LanguageCode::fromNullable($oldCode);
+        LanguageCode::fromNullable($newCode);
+
         $this->summaryRepository->rebuildLanguageCode($oldCode);
         $this->summaryRepository->rebuildLanguageCode($newCode);
     }
