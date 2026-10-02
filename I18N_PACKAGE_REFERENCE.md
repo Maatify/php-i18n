@@ -387,7 +387,7 @@ The runnable form of this workflow is [examples/01-core-wiring-and-first-transla
 | Unit and Real MySQL Integration suites | `tests/`, run by `composer test` |
 | External-consumer proof (separate Composer root, production autoload, real MySQL, two clean runs) | `consumer-verification/`, run by `composer verify:consumer` |
 | Smoke-executed examples | `examples/`, run by `composer check:examples` |
-| Package CI | `.github/workflows/ci-i18n-package.yml` of the Host repository, targeting this Artifact Root |
+| Package CI | `.github/workflows/ci-i18n-package.yml` in this standalone repository |
 
 The local command behind every CI gate is listed in [README.md](README.md#development-and-testing).
 
