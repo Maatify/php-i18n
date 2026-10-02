@@ -183,6 +183,13 @@ if (file_exists('HOW_TO_USE.md')) {
     $errors[] = 'HOW_TO_USE.md must not exist (docs/guides/USAGE_GUIDE.md is the only Usage Guide)';
 }
 
+// Reusable-library Composer source must not track a dependency lock file.
+$trackedComposerLock = [];
+exec('git ls-files --error-unmatch -- composer.lock 2>/dev/null', $trackedComposerLock, $composerLockStatus);
+if ($composerLockStatus === 0) {
+    $errors[] = 'composer.lock must not be tracked in reusable-library source (COMPOSER_PACKAGE_STANDARD.md §25)';
+}
+
 if ($errors !== []) {
     fwrite(STDERR, "[i18n-docs] ERRORS:\n  " . implode("\n  ", $errors) . "\n");
     exit(1);
