@@ -12,7 +12,7 @@ The canonical reference for the stable public, runtime and behavioral contract o
 | Composer identity | `maatify/php-i18n` |
 | Root namespace | `Maatify\I18n\` (PSR-4, `src/`) |
 | Distribution state | **Development, unpublished.** No tag, no release and no Packagist publication exist. |
-| Form today | Embedded Base Module Artifact Root (`Modules/I18n` of a Host repository). Everything in this file applies to that root. |
+| Form today | Standalone Composer package / standalone repository. Everything in this file applies to the repository root. |
 | PHP | `^8.4` ([composer.json](composer.json)) |
 | Persistence | Package-owned MySQL schema of seven `maa_i18n_*` tables ([schema/schema.i18n.sql](schema/schema.i18n.sql)) through `PDO` |
 | Shared mechanics | Transactions, display ordering and pagination come from `maatify/persistence`; the clock contract comes from `maatify/shared-common`; exceptions extend `maatify/exceptions` |
@@ -409,4 +409,4 @@ The Host owns, and I18n never does:
 - [ADR-018](dcos/ADR-018-string-codes-instead-of-fk-in-i18n.md): string codes instead of foreign keys for scope and domain.
 - [ADR-019](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md): Host-owned exact language code.
 - [ARCHITECTURE.md](ARCHITECTURE.md): component boundaries.
-- [BOOK.md](BOOK.md) and [BOOK/INDEX.md](BOOK/INDEX.md): conceptual and deep documentation (it never overrides this reference).
+- [BOOK/INDEX.md](BOOK/INDEX.md): conceptual and deep documentation (it never overrides this reference).
