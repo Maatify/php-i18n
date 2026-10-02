@@ -558,17 +558,21 @@ final class PerCs31SourceChecker
         $normalized = trim(preg_replace('/\\s+/', ' ', $normalized) ?? $normalized);
 
         $fallThrough = '(?:fall through|falls through|falling through)';
+        $negativeLead = '(?:never|avoid|prevent|do not|does not|should not|must not|will not|don t|doesn t|shouldn t|mustn t|not)';
         $negativePatterns = [
             '/\\b(?:(?:a|an|the)\\s+)?(?:accidental(?:ly)?|unintended|unintentional(?:ly)?)\\s+'
                 . $fallThrough . '\\b/',
             '/\\bno\\s+' . $fallThrough . '\\b/',
-            '/\\b(?:never|avoid|prevent|do not|does not|should not|must not|will not|don t|doesn t|shouldn t|mustn t|not)'
-                . '(?:\\s+\\w+){0,2}\\s+\\b' . $fallThrough . '\\b/',
+            '/\\b' . $negativeLead . '(?:\\s+\\w+){0,2}\\s+\\b' . $fallThrough . '\\b/',
             '/\\b' . $fallThrough . '\\s+(?:should|must|do|does|will)\\s+not\\b/',
             '/\\b' . $fallThrough . '\\s+(?:(?:is|was|would be)\\s+)?(?:an?\\s+)?(?:bug|error|mistake)\\b/',
             '/\\b' . $fallThrough . '\\s+(?:(?:is|was)\\s+)?(?:accidental(?:ly)?|unintended|unintentional(?:ly)?)\\b/',
             '/\\b' . $fallThrough . '\\s+(?:is|was)\\s+not\\s+(?:intentional|deliberate|intended|allowed|desired)\\b/',
             '/\\b' . $fallThrough . '\\s+by\\s+mistake\\b/',
+            '/\\b(?:(?:a|an|the)\\s+)?(?:accidental(?:ly)?|unintended|unintentional(?:ly)?)\\s+no break\\b/',
+            '/\\b' . $negativeLead . '(?:\\s+\\w+){0,2}\\s+\\bno break\\b/',
+            '/\\bno break\\s+(?:should|must|do|does|will)\\s+not\\b/',
+            '/\\bno break\\s+(?:(?:is|was|would be)\\s+)?(?:an?\\s+)?(?:bug|error|mistake)\\b/',
         ];
         foreach ($negativePatterns as $negativePattern) {
             if (preg_match($negativePattern, $normalized) === 1) {

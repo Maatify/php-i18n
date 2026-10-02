@@ -657,6 +657,19 @@ switch ($value) {
 PHP,
         'every non-empty case must end with a terminating statement',
     ],
+    'no-break marker described as a bug is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break is a bug
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
     'final non-empty case without a terminator is rejected' => [
         <<<'PHP'
 <?php
