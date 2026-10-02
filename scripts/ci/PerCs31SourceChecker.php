@@ -61,8 +61,11 @@ final class PerCs31SourceChecker
                         }
                     }
                     $caseEnd = self::findCaseEnd($tokens, $colon + 1);
-                    if ($caseEnd !== null && !self::caseEndsWithTerminator($tokens, $colon + 1, $caseEnd)
-                        && self::nextIndex($tokens, $colon + 1) !== $caseEnd) {
+                    $caseIsEmpty = $caseEnd !== null
+                        && self::nextIndex($tokens, $colon + 1) === $caseEnd;
+                    if ($caseEnd !== null && !$caseIsEmpty
+                        && !self::caseEndsWithTerminator($tokens, $colon + 1, $caseEnd)
+                        && !self::hasMarkedFallThrough($tokens, $colon + 1, $caseEnd)) {
                         $errors[] = self::location($file, $line) . ' every non-empty case must end with a terminating statement';
                     }
                 }
@@ -520,6 +523,31 @@ final class PerCs31SourceChecker
         return $lastStatementStart !== null
             && is_array($tokens[$lastStatementStart])
             && in_array($tokens[$lastStatementStart][0], $terminators, true);
+    }
+
+    /** @param list<array{int, string, int}|string> $tokens */
+    private static function hasMarkedFallThrough(array $tokens, int $start, int $end): bool
+    {
+        if (!self::isToken($tokens[$end] ?? null, T_CASE)
+            && !self::isToken($tokens[$end] ?? null, T_DEFAULT)) {
+            return false;
+        }
+
+        for ($index = $end - 1; $index >= $start; $index--) {
+            $token = $tokens[$index];
+            if (self::isToken($token, T_WHITESPACE)) {
+                continue;
+            }
+
+            if (!is_array($token) || !in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                return false;
+            }
+
+            // Match the default marker_text accepted by the active no_break_comment fixer.
+            return preg_match('~^((//|#)\\s*no break\\s*)|(/\\*\\*?\\s*no break(\\s+.*)*\\*/)$~i', $token[1]) === 1;
+        }
+
+        return false;
     }
 
     /** @param list<array{int, string, int}|string> $tokens */

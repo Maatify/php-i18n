@@ -311,6 +311,120 @@ $noop = function () {
 PHP,
         'empty closure braces must be on one line',
     ],
+    'terminated non-empty switch cases pass' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        return;
+    default:
+        break;
+}
+PHP,
+        null,
+    ],
+    'marked fall-through to a following case passes' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+        // no break
+    case 2:
+        return;
+    default:
+        break;
+}
+PHP,
+        null,
+    ],
+    'unmarked fall-through is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+        recordValue();
+    case 2:
+        break;
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'final non-empty case without a terminator is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    default:
+        recordValue();
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'final case marker without a following case is rejected' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    default:
+        recordValue();
+        // no break
+}
+PHP,
+        'every non-empty case must end with a terminating statement',
+    ],
+    'empty grouped switch cases pass' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1:
+    case 2:
+        break;
+    default:
+        return;
+}
+PHP,
+        null,
+    ],
+    'valid multiline switch conditions pass' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case (
+        $first
+        === $second
+    ):
+        break;
+    default:
+        return;
+}
+PHP,
+        null,
+    ],
+    'multiline switch conditions still require parentheses' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case $first
+        === $second:
+        break;
+    default:
+        return;
+}
+PHP,
+        'multiline case conditions must be wrapped in parentheses',
+    ],
+    'switch case bodies still reject braces' => [
+        <<<'PHP'
+<?php
+switch ($value) {
+    case 1: {
+        break;
+    }
+    default:
+        return;
+}
+PHP,
+        'case bodies must not be wrapped in braces',
+    ],
 ];
 
 $failures = [];
