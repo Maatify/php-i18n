@@ -192,6 +192,8 @@ foreach (['ADR-018', 'ADR-019', 'ADR-020'] as $decisionId) {
 // Keep both supported package archive mechanisms excluding pre-publication
 // decision and migration history from first-RC distribution artifacts.
 $requiredDistributionPaths = [
+    'dcos',
+    'docs/decisions',
     'dcos/ADR-018-string-codes-instead-of-fk-in-i18n.md',
     'dcos/ADR-019-host-owned-exact-language-code-in-i18n.md',
     'docs/decisions/ADR-020-nullable-translation-type-metadata.md',

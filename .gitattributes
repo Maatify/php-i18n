@@ -1,4 +1,6 @@
+/dcos export-ignore
 /dcos/** export-ignore
+/docs/decisions export-ignore
 /docs/decisions/** export-ignore
 /schema/migrations/2026-10-02-translation-type.sql export-ignore
 /tests/Fixtures/Schema/schema.pre-s1.i18n.sql export-ignore
