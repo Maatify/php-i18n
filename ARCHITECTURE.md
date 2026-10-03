@@ -1,10 +1,10 @@
 # Architecture: Maatify I18n
 
-This document describes the architectural boundaries and components of the I18n module (`maatify/php-i18n`). The canonical public, runtime and behavioral contract, including the complete Public Runtime API inventory, is the [Package Reference](I18N_PACKAGE_REFERENCE.md); this file explains how the parts fit together.
+This document describes the architectural boundaries and components of the I18n package (`maatify/php-i18n`). The canonical public, runtime and behavioral contract, including the complete Public Runtime API inventory, is the [Package Reference](I18N_PACKAGE_REFERENCE.md); this file explains how the parts fit together.
 
 ## 1. Database Schema
 
-The module owns the tables that manage the translation layer.
+The package owns the tables that manage the translation layer.
 It has **no dependency on any Host language table**: language identity is an
 exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)).
 
@@ -100,7 +100,7 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 
 ## 3. Consistency Model
 
-The module utilizes a **Strong Consistency** model.
+The package utilizes a **Strong Consistency** model.
 *   Writes that create or delete translations trigger synchronous updates to `maa_i18n_domain_language_summary`; type-only metadata changes do not alter completeness or key counters.
 *   No background queues or eventual consistency.
 

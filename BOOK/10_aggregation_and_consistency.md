@@ -4,7 +4,7 @@ This chapter documents the **strong-consistency derived layers** and the **synch
 
 ## 1. Derived Aggregation Layers
 
-The module maintains **two** high-performance derived tables:
+The package maintains **two** high-performance derived tables:
 
 1. **`maa_i18n_domain_language_summary`** (domain-first summary)
 2. **`maa_i18n_key_stats`** (per-key counters)
@@ -55,7 +55,7 @@ Both tables are **derived**, **non-authoritative**, and **fully rebuildable** fr
 
 ## 2. Consistency Model (Strong Consistency)
 
-The module strictly enforces **Strong Consistency** for derived layers:
+The package strictly enforces **Strong Consistency** for derived layers:
 
 * **Synchronous Updates:** Counters are updated immediately during the write transaction.
 * **Single-TX Guarantee:** Derived writes must run in the **same TX** as authoritative writes.
@@ -211,12 +211,12 @@ Key rules:
 
 ## 7. Non-Goals
 
-To preserve reliability and kernel-grade behavior, the module explicitly rejects:
+To preserve reliability and kernel-grade behavior, the package explicitly rejects:
 
 * **Async reconciliation** (“fix later”)
 * **Event buses / external workers**
 * **Cron-based correctness**
 * **Eventual consistency**
-* **Cross-module coupling** (derived logic remains self-contained within `I18n`)
+* **Cross-package coupling** (derived logic remains self-contained within the I18n package)
 
 ---

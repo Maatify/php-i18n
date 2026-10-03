@@ -128,6 +128,6 @@ $rekeyed = $service->rekeyLanguageCode(oldCode: 'ar', newCode: 'ar-EG');
 
 **Status: NOT SUPPORTED**
 
-The module does not support deleting keys (`deleteKey`).
+The package does not support deleting keys (`deleteKey`).
 *   **Rationale:** Deleting keys breaks historical context and referential integrity in consuming applications.
 *   **Strategy:** Deprecated keys should be left as-is or renamed with a `deprecated.` prefix if necessary.

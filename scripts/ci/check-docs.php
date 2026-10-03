@@ -103,6 +103,7 @@ foreach ($documents as $document) {
     // 2. Claims that must not appear.
     $forbidden = [
         '/maatify\/i18n\b/i' => 'stale identity (the Composer identity is maatify/php-i18n)',
+        '/https?:\/\/github\.com\/Maatify\/i18n\b/i' => 'stale repository URL (the repository is Maatify/php-i18n)',
         '/img\.shields\.io\/packagist/i' => 'Packagist badge for an unpublished package',
         '/packagist\.org\/packages/i' => 'Packagist package link for an unpublished package',
         '/Status-(Stable|RC|Release)/i' => 'publication status claim',
@@ -119,15 +120,26 @@ foreach ($documents as $document) {
         }
     }
 
-    if (in_array($document, $currentStateDocuments, true)) {
-        $staleArtifactForm = [
-            '/Embedded Base Module/i' => 'stale embedded-artifact form claim in a standalone package',
-            '/Modules\/I18n\b/i' => 'stale embedded module path in a standalone package',
-        ];
-        foreach ($staleArtifactForm as $pattern => $reason) {
-            if (preg_match($pattern, $text, $m) === 1) {
-                $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
-            }
+}
+
+/** Current package documentation and schema must retain the standalone artifact identity. */
+$currentArtifactIdentitySurfaces = array_merge(
+    $currentStateDocuments,
+    ['schema/schema.i18n.sql'],
+);
+$staleArtifactForm = [
+    '/Embedded Base Module/i' => 'stale embedded-artifact form claim in a standalone package',
+    '/Modules\/I18n\b/i' => 'stale embedded module path in a standalone package',
+    '/\bI18n\s+module\b/i' => 'the standalone package is identified as a module',
+    '/\b(?:this|the)\s+module\b/i' => 'the standalone package is identified as a module',
+    '/\bmodule\s*\(\s*translation\s+layer\s*\)/i' => 'the standalone package is identified as a module',
+    '/\bcross-module\s+coupling\b/i' => 'stale module-framed package boundary wording',
+];
+foreach ($currentArtifactIdentitySurfaces as $document) {
+    $text = (string) file_get_contents($document);
+    foreach ($staleArtifactForm as $pattern => $reason) {
+        if (preg_match($pattern, $text, $m) === 1) {
+            $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
         }
     }
 }
@@ -156,23 +168,28 @@ foreach ($notPublic as $short) {
     }
 }
 
-// PHP source documentation must use the current Composer and repository identity.
-$staleSourceIdentityOccurrences = 0;
-$sourceIterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator('src', FilesystemIterator::SKIP_DOTS),
-);
-foreach ($sourceIterator as $sourceFile) {
-    if (!$sourceFile instanceof SplFileInfo || $sourceFile->getExtension() !== 'php') {
-        continue;
-    }
-    $source = (string) file_get_contents($sourceFile->getPathname());
-    $staleSourceIdentityOccurrences += preg_match_all(
-        '/maatify\/i18n\b|maatify:i18n\b|https?:\/\/github\.com\/Maatify\/i18n\b/i',
-        $source,
+// PHP source and tests must use the current Composer and repository identity.
+$staleSourceTestIdentityOccurrences = 0;
+foreach (['src', 'tests'] as $sourceRoot) {
+    $sourceIterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($sourceRoot, FilesystemIterator::SKIP_DOTS),
     );
+    foreach ($sourceIterator as $sourceFile) {
+        if (!$sourceFile instanceof SplFileInfo || $sourceFile->getExtension() !== 'php') {
+            continue;
+        }
+        $source = (string) file_get_contents($sourceFile->getPathname());
+        $staleSourceTestIdentityOccurrences += preg_match_all(
+            '/maatify\/i18n\b|maatify:i18n\b|https?:\/\/github\.com\/Maatify\/i18n\b/i',
+            $source,
+        );
+    }
 }
-if ($staleSourceIdentityOccurrences !== 0) {
-    $errors[] = sprintf('src: %d stale package or repository identity occurrence(s)', $staleSourceIdentityOccurrences);
+if ($staleSourceTestIdentityOccurrences !== 0) {
+    $errors[] = sprintf(
+        'src/tests: %d stale package or repository identity occurrence(s)',
+        $staleSourceTestIdentityOccurrences,
+    );
 }
 
 // 3. llms.txt shape.
@@ -211,8 +228,8 @@ if ($errors !== []) {
 }
 
 echo sprintf(
-    "[i18n-docs] %d documents and %d src types: links, anchors, claims, API inventory, source identity (%d stale occurrences) and llms.txt shape are consistent\n",
+    "[i18n-docs] %d documents and %d src types: links, anchors, claims, API inventory, source/test identity (%d stale occurrences) and llms.txt shape are consistent\n",
     count($documents),
     $inventoried,
-    $staleSourceIdentityOccurrences,
+    $staleSourceTestIdentityOccurrences,
 );
