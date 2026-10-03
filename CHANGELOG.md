@@ -1,12 +1,12 @@
 # Changelog
 
-This file records package contents by release target. The package's initial contents remain under `[Unreleased]` until a release target is assigned.
+This file records package contents by release target. The package's initial contents are allocated to `1.0.0-rc.1`.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The package is in development and has not been published: there is no tag, release or Packagist publication yet, so no released version is listed below.
+Release Preparation is active. Publication State is Unpublished: there is no tag, GitHub Release or Packagist publication yet. The target below has no actual release date.
 
-## [Unreleased]
+## [1.0.0-rc.1]
 
 ### Added
 

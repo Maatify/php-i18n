@@ -2,7 +2,7 @@
 
 # Maatify I18n
 
-![Maatify.dev](https://github.com/Maatify.png?size=160)
+![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)
 
 [![Status](https://img.shields.io/badge/Status-Development-blue)](README.md)
 [![PHP](https://img.shields.io/badge/PHP-%5E8.4-8892BF)](composer.json)
@@ -22,6 +22,8 @@
 `maatify/php-i18n` is a governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft runtime reads, management reads for admin screens, and operational coverage facts. Language identity stays with the Host: I18n stores an exact, nullable language code and never applies a fallback.
 
 Development / Unpublished — there is currently no supported distribution install. See [Installation](#installation) for repository-development setup.
+
+Release Target: `1.0.0-rc.1` · Release Preparation: active · Publication State: Unpublished.
 
 </div>
 
@@ -142,7 +144,7 @@ Six maintained examples cover every material capability and run against a dispos
 | [I18N_PACKAGE_REFERENCE.md](I18N_PACKAGE_REFERENCE.md) | the canonical public, runtime and behavioral contract |
 | [docs/guides/USAGE_GUIDE.md](docs/guides/USAGE_GUIDE.md) | integration walkthroughs |
 | [examples/](examples/) | maintained, executable examples |
-| [CHANGELOG.md](CHANGELOG.md) | initial package contents under `[Unreleased]` |
+| [CHANGELOG.md](CHANGELOG.md) | initial package contents allocated to `1.0.0-rc.1`; unpublished |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | component boundaries |
 | [BOOK/INDEX.md](BOOK/INDEX.md) | conceptual, deep documentation; never overrides the Reference |
 | [llms.txt](llms.txt) | navigation for AI consumers |
@@ -160,7 +162,7 @@ Six maintained examples cover every material capability and run against a dispos
 | Consumer Verification Harness | external Composer root, production autoload, real MySQL, two clean runs |
 | Examples | every example smoke-executed |
 | Composer audit and platform requirements | enforced |
-| Release | **none.** Development state; see [CHANGELOG.md](CHANGELOG.md) |
+| Release | `1.0.0-rc.1` in preparation; unpublished, with no tag or GitHub Release. See [CHANGELOG.md](CHANGELOG.md) |
 
 ## Development and Testing
 
