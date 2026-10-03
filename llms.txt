@@ -1,19 +1,19 @@
 # Maatify I18n (maatify/php-i18n)
 
-> Governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft reads, management reads and operational facts. Language identity and fallback stay with the Host. Standalone Composer package / standalone repository; Release Target 1.0.0-rc.1 in preparation, Publication State Unpublished, with no tag, GitHub Release or Packagist publication.
+> Governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft reads, management reads and operational facts. Language identity and fallback stay with the Host. Standalone Composer package with Published Release Candidate 1.0.0-rc.1 on Packagist; no Published Stable release or Stable support line.
 
 This file is for an AI agent that consumes the package, not one that modifies it. The supported contract is what the linked consumer documents describe. Visible in the repository does not mean supported: do not treat `src/` internals, tests, fixtures, scripts, undocumented classes or methods, or internal engineering files as a consumer contract, and do not invent a contract the documents below do not state.
 
 ## Start here
 
-- [README.md](README.md): overview, requirements, installation state, quick usage, Public Runtime API overview.
+- [README.md](README.md): overview, requirements, exact RC installation, quick usage, Public Runtime API overview.
 - [I18N_PACKAGE_REFERENCE.md](I18N_PACKAGE_REFERENCE.md): the canonical public, runtime and behavioral contract and the complete Public Runtime API inventory.
 - [docs/guides/USAGE_GUIDE.md](docs/guides/USAGE_GUIDE.md): integration walkthroughs and boundaries.
 - [examples/](examples/): maintained, executable examples that use only the Public Runtime API.
 
 ## Release and state
 
-- [CHANGELOG.md](CHANGELOG.md): initial package contents allocated to exact target `1.0.0-rc.1`; release preparation is active and publication state is Unpublished.
+- [CHANGELOG.md](CHANGELOG.md): published `1.0.0-rc.1` Release Candidate, actual release date and release link.
 - [composer.json](composer.json): the only owner of package identity, PHP and extension requirements, dependencies and autoload.
 
 ## Deeper documentation

@@ -4,12 +4,17 @@
 
 ![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)
 
-[![Status](https://img.shields.io/badge/Status-Development-blue)](README.md)
+[![Status](https://img.shields.io/badge/Status-Release%20Candidate-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.0.0--rc.1-blue)](https://packagist.org/packages/maatify/php-i18n)
 [![PHP](https://img.shields.io/badge/PHP-%5E8.4-8892BF)](composer.json)
 [![License](https://img.shields.io/badge/License-Proprietary-green)](LICENSE)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-4E8CAE)](phpstan.neon)
 
+[![Packagist](https://img.shields.io/badge/Packagist-Distribution-blue)](https://packagist.org/packages/maatify/php-i18n)
+[![Monthly Downloads](https://img.shields.io/packagist/dm/maatify/php-i18n)](https://packagist.org/packages/maatify/php-i18n)
+[![Total Downloads](https://img.shields.io/packagist/dt/maatify/php-i18n)](https://packagist.org/packages/maatify/php-i18n)
 [![Maatify Ecosystem](https://img.shields.io/badge/Maatify-Ecosystem-blueviolet)](https://github.com/Maatify)
+[![Install](https://img.shields.io/badge/Install-1.0.0--rc.1%40RC-blue)](#installation)
 
 [![Usage Guide](https://img.shields.io/badge/Docs-Usage%20Guide-informational)](docs/guides/USAGE_GUIDE.md)
 [![Examples](https://img.shields.io/badge/Docs-Examples-informational)](examples/)
@@ -21,9 +26,9 @@
 
 `maatify/php-i18n` is a governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft runtime reads, management reads for admin screens, and operational coverage facts. Language identity stays with the Host: I18n stores an exact, nullable language code and never applies a fallback.
 
-Development / Unpublished — there is currently no supported distribution install. See [Installation](#installation) for repository-development setup.
+Published Release Candidate: `1.0.0-rc.1`, distributed through [Packagist](https://packagist.org/packages/maatify/php-i18n). No Published Stable release or Stable support line exists. See [Installation](#installation) for the exact consumer command.
 
-Release Target: `1.0.0-rc.1` · Release Preparation: active · Publication State: Unpublished.
+Release Target: `1.0.0-rc.1` · Publication State: Published pre-release · Lifecycle Status: Release Candidate.
 
 </div>
 
@@ -55,10 +60,10 @@ Release Target: `1.0.0-rc.1` · Release Preparation: active · Publication State
 
 ## Installation
 
-**Development / Unpublished.** This standalone repository is not published to Packagist, so there is no supported `composer require` installation yet. Repository development uses Composer from the repository root:
+Install the exact published Release Candidate from Packagist:
 
 ```bash
-composer install
+composer require maatify/php-i18n:1.0.0-rc.1@RC
 ```
 
 Then create the database objects once, on a fresh database, from [schema/schema.i18n.sql](schema/schema.i18n.sql). The file begins with `DROP TABLE IF EXISTS` for the seven tables, so never apply it over existing I18n data.
@@ -144,7 +149,7 @@ Six maintained examples cover every material capability and run against a dispos
 | [I18N_PACKAGE_REFERENCE.md](I18N_PACKAGE_REFERENCE.md) | the canonical public, runtime and behavioral contract |
 | [docs/guides/USAGE_GUIDE.md](docs/guides/USAGE_GUIDE.md) | integration walkthroughs |
 | [examples/](examples/) | maintained, executable examples |
-| [CHANGELOG.md](CHANGELOG.md) | initial package contents allocated to `1.0.0-rc.1`; unpublished |
+| [CHANGELOG.md](CHANGELOG.md) | published `1.0.0-rc.1` Release Candidate and its actual release date |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | component boundaries |
 | [BOOK/INDEX.md](BOOK/INDEX.md) | conceptual, deep documentation; never overrides the Reference |
 | [llms.txt](llms.txt) | navigation for AI consumers |
@@ -159,10 +164,10 @@ Six maintained examples cover every material capability and run against a dispos
 | PHPStan level `max` (src, tests, examples, consumer harness) | enforced, zero errors, no baseline, no suppressions |
 | Unit suite (no Docker) and real-MySQL Integration suite | enforced on PHP 8.4 and 8.5 |
 | Dependency compatibility | latest-compatible and lowest-supported resolutions both verified |
-| Consumer Verification Harness | external Composer root, production autoload, real MySQL, two clean runs |
+| Consumer Verification Harness | repository-path dependency in an external Composer root, production autoload, real MySQL, two clean runs; published-RC Harness verification is the next separate step |
 | Examples | every example smoke-executed |
 | Composer audit and platform requirements | enforced |
-| Release | `1.0.0-rc.1` in preparation; unpublished, with no tag or GitHub Release. See [CHANGELOG.md](CHANGELOG.md) |
+| Release | Published Release Candidate `1.0.0-rc.1`; no Published Stable release or Stable support line. See [CHANGELOG.md](CHANGELOG.md) |
 
 ## Development and Testing
 

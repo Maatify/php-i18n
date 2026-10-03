@@ -5,7 +5,7 @@
 
 ## Current Support State
 
-This package is in Development / Unpublished state. There is no published Stable release and therefore no supported Stable release line. A future Release Candidate or release preparation does not establish Stable support.
+`1.0.0-rc.1` is a Published Release Candidate and a pre-release distributed through Packagist. There is no Published Stable release and no Stable support line. Publishing this RC does not establish Stable support.
 
 ## Reporting a Vulnerability
 
