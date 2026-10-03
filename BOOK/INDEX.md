@@ -71,13 +71,6 @@ Use this index to navigate non-linearly, or read the chapters in order.
 
 ---
 
-## Host Boundary
-
-- [ADR-019](../dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)
-  Language identity is Host-owned. I18n has no dependency on a language registry or any language table: it stores an exact, nullable `language_code`. The Host owns the language registry, fallback, and semantic validation.
-
----
-
 ## Reading Advice
 
 - Read once top to bottom, then use this index for lookups.

@@ -75,7 +75,7 @@ Generic updates never change stable identity: metadata updates cannot change a `
 
 ## 4. Language-Code Contract
 
-The language is an exact, nullable, Host-owned `language_code` ([ADR-019](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)).
+The language is an exact, nullable, Host-owned `language_code`.
 
 - `null` is the **exact unlocalized scope**. It is not a wildcard, a default or "all languages".
 - A non-null code is the **exact scope of that code**. Reading `'ar'` never returns an `'ar-EG'`, `'en'` or `null`-scope value; reading `null` never returns a language row.
@@ -355,11 +355,10 @@ Duplicate races end in the Package exception, never a raw PDO error: the databas
 
 - **Authority:** [schema/schema.i18n.sql](schema/schema.i18n.sql) is the fresh-install schema authority: seven tables, an `id` primary key on each, column comments and documented policies. A Host copy of it is a projection, never a second design source.
 - **Fresh installation:** apply the file to a fresh database, for example with `PDO::exec` over its contents. **It begins with `DROP TABLE IF EXISTS` for all seven tables**, so applying it to a database that already holds I18n data destroys that data.
-- **S1 upgrade:** [schema/migrations/2026-10-02-translation-type.sql](schema/migrations/2026-10-02-translation-type.sql) is an additive migration from the exact pre-S1 schema identified in its header. It adds nullable `type`; existing rows receive `NULL`. The Package ships this schema-evolution asset but no migration framework; the Host controls when it is applied.
 - **Translation type column:** `VARCHAR(32) NULL COLLATE utf8mb4_bin`, protected by a check constraint, with no index. It is not part of translation identity, uniqueness or generated language identity.
 - **Engine:** MySQL with InnoDB, `utf8mb4`, generated stored columns, `CHECK` constraints and `COLLATE utf8mb4_bin` on language codes (MySQL 8.4 is the version exercised by the Package verification).
 - **Tables:** `maa_i18n_scopes`, `maa_i18n_domains`, `maa_i18n_domain_scopes`, `maa_i18n_keys`, `maa_i18n_translations`, `maa_i18n_domain_language_summary` (derived), `maa_i18n_key_stats` (derived).
-- **Host independence:** no foreign key to, and no join with, any Host table. Scope and domain codes are referenced by code, not by foreign key ([ADR-018](dcos/ADR-018-string-codes-instead-of-fk-in-i18n.md)); the Package serializes code change versus new usage with row locks instead.
+- **Host independence:** no foreign key to, and no join with, any Host table. Scope and domain codes are referenced by code, not by foreign key; the Package serializes code change versus new usage with row locks instead.
 - **No soft delete.** Translations hard-delete; per-key stats cascade from their key.
 - **Derived tables** are non-authoritative and rebuildable; `I18nStatsRebuilder::fullRebuild()` is the canonical recovery from drift.
 - **Time:** the Package never changes the global timezone; the translation repository takes its clock from the shared `ClockInterface`; the Host owns timezone policy.
@@ -406,7 +405,5 @@ The Host owns, and I18n never does:
 
 ## 12. Related Documents
 
-- [ADR-018](dcos/ADR-018-string-codes-instead-of-fk-in-i18n.md): string codes instead of foreign keys for scope and domain.
-- [ADR-019](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md): Host-owned exact language code.
 - [ARCHITECTURE.md](ARCHITECTURE.md): component boundaries.
 - [BOOK/INDEX.md](BOOK/INDEX.md): conceptual and deep documentation (it never overrides this reference).

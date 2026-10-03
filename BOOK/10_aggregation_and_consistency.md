@@ -15,7 +15,7 @@ Both tables are **derived**, **non-authoritative**, and **fully rebuildable** fr
 
 ### 1.1 `maa_i18n_domain_language_summary`
 
-**Purpose:** Fast completeness metrics per exact `(scope, domain, language_code)` ([ADR-019](../dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)).
+**Purpose:** Fast completeness metrics per exact `(scope, domain, language_code)`; language identity remains Host-owned as described in the [Package Reference](../I18N_PACKAGE_REFERENCE.md#4-language-code-contract).
 
 **Characteristics**
 

@@ -6,7 +6,7 @@ This document describes the architectural boundaries and components of the I18n 
 
 The package owns the tables that manage the translation layer.
 It has **no dependency on any Host language table**: language identity is an
-exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)).
+exact, nullable, Host-owned `language_code` (see the [Package Reference](I18N_PACKAGE_REFERENCE.md#4-language-code-contract)).
 
 ### `maa_i18n_scopes`
 *   **Purpose:** Top-level boundaries (e.g., `admin`, `client`).
@@ -43,7 +43,7 @@ exact, nullable, Host-owned `language_code` (see [ADR-019](dcos/ADR-019-host-own
 *   **Columns:** `id` (PK), `key_id` (unique FK -> maa_i18n_keys: exactly one stats row per key), `translated_count`, `updated_at`.
 
 ### Schema authority
-`schema/schema.i18n.sql` is the fresh-install schema authority: seven tables, an `id` primary key on each, meaningful column comments, documented policies. The additive [S1 migration](schema/migrations/2026-10-02-translation-type.sql) upgrades the exact pre-S1 schema. A Host deployment copy is a projection, never a second design source.
+`schema/schema.i18n.sql` is the fresh-install schema authority: seven tables, an `id` primary key on each, meaningful column comments, and documented policies, including nullable translation `type` metadata. A Host deployment copy is a projection, never a second design source.
 
 ## 1.1 Source topology
 
@@ -110,6 +110,6 @@ The package utilizes a **Strong Consistency** model.
 *   **External:** PDO (Database), `maatify/shared-common` (Clock), `maatify/exceptions`, `maatify/persistence` `^1.4` (transactions, ordering, pagination).
 *   **Optional:** `php-di/php-di` + `psr/container` only for `Adapter/PhpDi/I18nBindings` (Composer `suggest`; the Core never loads them).
 
-## 5. Host Responsibilities (ADR-019)
+## 5. Host Responsibilities
 
 The Host owns: the language registry, ID -> code resolution, locale selection, fallback, semantic validation of codes, and composition of language names/icons/active flags with I18n exact-scope counts. When a Host renames a language code it must call `TranslationWriteService::rekeyLanguageCode()` in the same transaction as its own rename; I18n never edits Host language data.

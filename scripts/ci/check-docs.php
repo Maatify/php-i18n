@@ -38,6 +38,7 @@ $currentStateDocuments = array_merge(
     ['README.md',
         'I18N_PACKAGE_REFERENCE.md',
         'ARCHITECTURE.md',
+        'CHANGELOG.md',
         'llms.txt',
         'SECURITY.md',
         'CONTRIBUTING.md',
@@ -138,6 +139,21 @@ $staleArtifactForm = [
 foreach ($currentArtifactIdentitySurfaces as $document) {
     $text = (string) file_get_contents($document);
     foreach ($staleArtifactForm as $pattern => $reason) {
+        if (preg_match($pattern, $text, $m) === 1) {
+            $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
+        }
+    }
+}
+
+/** First-RC consumer documents describe current state, not unpublished engineering stages. */
+$stalePrePublicationLineage = [
+    '/\bpre-S1\b/i' => 'unpublished pre-S1 schema lineage in consumer documentation',
+    '/\bS1\s+(?:schema\s+)?(?:upgrade|migration)\b/i' => 'unpublished S1 upgrade or migration framing in consumer documentation',
+    '/\bdcos\//i' => 'historical decision-record path in consumer documentation',
+];
+foreach ($currentStateDocuments as $document) {
+    $text = (string) file_get_contents($document);
+    foreach ($stalePrePublicationLineage as $pattern => $reason) {
         if (preg_match($pattern, $text, $m) === 1) {
             $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
         }

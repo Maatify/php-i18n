@@ -12,10 +12,10 @@ How to integrate `maatify/php-i18n` into an application. This guide presents the
 
 - PHP `^8.4` with `ext-pdo`, `ext-pdo_mysql` and `ext-mbstring`;
 - a MySQL database and a `PDO` connection with `PDO::ERRMODE_EXCEPTION`;
-- the canonical schema applied once to a fresh database: [schema/schema.i18n.sql](../../schema/schema.i18n.sql) (it starts with `DROP TABLE IF EXISTS` for the seven `maa_i18n_*` tables, so never apply it over live data). For an existing pre-S1 database, apply the additive [translation type migration](../../schema/migrations/2026-10-02-translation-type.sql) through your migration process;
+- the canonical schema applied once to a fresh database: [schema/schema.i18n.sql](../../schema/schema.i18n.sql) (it starts with `DROP TABLE IF EXISTS` for the seven `maa_i18n_*` tables, so never apply it over live data);
 - a clock implementing `Maatify\SharedCommon\Contracts\ClockInterface` (for example `SystemClock`).
 
-**I18n does not:** own languages or locale selection, fall back to another language, cache, load files, delete keys, or ship a migration framework. It ships the S1 schema migration asset; the Host controls when to apply it. ([Reference section 11](../../I18N_PACKAGE_REFERENCE.md#11-host-owned-responsibilities))
+**I18n does not:** own languages or locale selection, fall back to another language, cache, load files, delete keys, or ship a migration framework. ([Reference section 11](../../I18N_PACKAGE_REFERENCE.md#11-host-owned-responsibilities))
 
 **Primary calls:**
 
