@@ -7,7 +7,7 @@ namespace Maatify\I18n\DTO;
 use JsonSerializable;
 
 /**
- * Immutable translation result value. Its fields describe `id`, `keyId`, `languageCode`, `value`, `createdAt`, `updatedAt`.
+ * Immutable translation row with exact nullable type metadata.
  */
 final readonly class TranslationDTO implements JsonSerializable
 {
@@ -16,6 +16,7 @@ final readonly class TranslationDTO implements JsonSerializable
         public int $keyId,
         public ?string $languageCode,
         public string $value,
+        public ?string $type,
         public string $createdAt,
         public ?string $updatedAt,
     ) {}
@@ -30,6 +31,7 @@ final readonly class TranslationDTO implements JsonSerializable
             'key_id' => $this->keyId,
             'language_code' => $this->languageCode,
             'value' => $this->value,
+            'type' => $this->type,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
         ];

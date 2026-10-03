@@ -2,12 +2,12 @@
 
 /**
  * @copyright   ©2026 Maatify.dev
- * @Library     maatify/i18n
- * @Project     maatify:i18n
+ * @Library     maatify/php-i18n
+ * @Project     maatify:php-i18n
  * @author      Mohamed Abdulalim (megyptm) <mohamed@maatify.dev>
  * @since       2026-10-01 00:00
  * @see         https://www.maatify.dev Maatify.dev
- * @link        https://github.com/Maatify/i18n view Project on GitHub
+ * @link        https://github.com/Maatify/php-i18n view Project on GitHub
  * @note        Distributed in the hope that it will be useful - WITHOUT WARRANTY.
  */
 
@@ -60,7 +60,9 @@ final class DomainManagementTest extends MysqlIntegrationTestCase
         self::assertNotFalse($stmt);
 
         $positions = [];
-        foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $value) {
+        /** @var list<int|string> $values */
+        $values = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        foreach ($values as $value) {
             $positions[] = is_numeric($value) ? (int) $value : -1;
         }
 

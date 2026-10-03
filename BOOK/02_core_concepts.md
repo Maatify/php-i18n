@@ -4,7 +4,7 @@ This chapter defines the strictly enforced terminology and data models used by t
 
 ## Language Identity
 
-Language identity is **owned by the Host**, not by this module ([ADR-019](../dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)).
+Language identity is **owned by the Host**, not by the I18n package (see the [Package Reference](../I18N_PACKAGE_REFERENCE.md#4-language-code-contract)).
 I18n stores an exact, nullable `language_code` (`VARCHAR(16)`) in `maa_i18n_translations` and has no dependency on any language registry or `languages` table.
 
 *   `NULL` = the **exact unlocalized scope**.

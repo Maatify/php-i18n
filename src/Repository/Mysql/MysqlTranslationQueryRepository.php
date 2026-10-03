@@ -33,6 +33,13 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
         $this->gateway = new PdoGateway($pdo);
     }
 
+    /**
+     * Page key summaries for one scope/domain, counting how many supplied exact
+     * language codes each key is missing. Duplicate codes count once; an empty
+     * code list yields zero total languages and zero missing per key.
+     *
+     * @return PageResult<KeyTranslationSummaryDTO>
+     */
     public function pageDomainKeySummaries(DomainKeySummaryCriteria $criteria): PageResult
     {
         $codes = array_values(array_unique($criteria->languageCodes));
@@ -119,6 +126,13 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
         );
     }
 
+    /**
+     * Page the key-by-supplied-code grid for one scope/domain. Codes are exact
+     * and deduplicated; an empty list yields no grid rows, and a null value marks
+     * a missing translation.
+     *
+     * @return PageResult<TranslationGridRowDTO>
+     */
     public function pageDomainTranslationGrid(DomainTranslationGridCriteria $criteria): PageResult
     {
         $codes = array_values(array_unique($criteria->languageCodes));
@@ -207,7 +221,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
             filteredCountSql: 'SELECT COUNT(*) ' . $from($filteredCodeSql) . $whereSql,
             filteredCountParams: $filterParams + $filteredCodeParams,
             dataSql: 'SELECT t.id AS translation_id, k.id AS key_id, k.key_part, k.description,
-                             lc.language_code, t.value ' . $from($dataCodeSql) . $whereSql,
+                             lc.language_code, t.value, t.type ' . $from($dataCodeSql) . $whereSql,
             dataParams: $filterParams + $dataCodeParams,
         );
 
@@ -234,10 +248,18 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
                 Row::nullableString($row, 'description'),
                 Row::string($row, 'language_code'),
                 Row::nullableString($row, 'value'),
+                Row::nullableString($row, 'type'),
             ),
         );
     }
 
+    /**
+     * Page every key with its translation from the one exact language code;
+     * keys without a row remain in the result with null translation fields.
+     * Filtering, sorting, and page selection are applied through the criteria.
+     *
+     * @return PageResult<LanguageTranslationValueDTO>
+     */
     public function pageLanguageTranslationValues(LanguageTranslationValuesCriteria $criteria): PageResult
     {
         $where = [];
@@ -290,7 +312,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
             filteredCountSql: 'SELECT COUNT(*) ' . $from . $whereSql,
             filteredCountParams: $filterParams + $joinParams,
             dataSql: 'SELECT k.id AS key_id, k.scope, k.domain, k.key_part,
-                             t.id AS translation_id, t.value,
+                             t.id AS translation_id, t.value, t.type,
                              COALESCE(t.created_at, k.created_at) AS created_at,
                              t.updated_at ' . $from . $whereSql,
             dataParams: $filterParams + $joinParams,
@@ -321,6 +343,7 @@ final readonly class MysqlTranslationQueryRepository implements TranslationQuery
                 Row::string($row, 'key_part'),
                 Row::nullableInt($row, 'translation_id'),
                 Row::nullableString($row, 'value'),
+                Row::nullableString($row, 'type'),
                 Row::string($row, 'created_at'),
                 Row::nullableString($row, 'updated_at'),
             ),

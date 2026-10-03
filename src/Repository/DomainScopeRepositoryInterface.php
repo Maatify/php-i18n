@@ -48,8 +48,6 @@ interface DomainScopeRepositoryInterface
      */
     public function assign(string $scopeCode, string $domainCode): void;
 
-    /**
-     * @return int affected rows (0 or 1)
-     */
-    public function unassign(string $scopeCode, string $domainCode): int;
+    /** Returns whether the exact assignment row was deleted. */
+    public function unassign(string $scopeCode, string $domainCode): bool;
 }

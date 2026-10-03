@@ -4,8 +4,8 @@
  * Documentation consistency gate for the Package consumer documents.
  *
  * 1. Every relative Markdown link (and #anchor into a Markdown file) resolves.
- * 2. No stale identity, release, Packagist, PHP-version, Host-name or
- *    removed-guide claim appears in the consumer documents.
+ * 2. No stale identity, release, Packagist, PHP-version, Host-name,
+ *    embedded-artifact or removed-guide claim appears in current consumer docs.
  * 3. `llms.txt` stays a navigation layer: one H1, a blockquote, link sections
  *    only, no copied contract.
  *
@@ -17,12 +17,35 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 chdir($root);
 
-/** Consumer-facing documents (ADRs under dcos/ are historical decision records). */
+/** Maintained consumer and governance documents (ADRs under dcos/ are historical decision records). */
 $documents = array_merge(
-    ['README.md', 'I18N_PACKAGE_REFERENCE.md', 'ARCHITECTURE.md', 'BOOK.md', 'CHANGELOG.md', 'llms.txt'],
+    ['README.md',
+        'I18N_PACKAGE_REFERENCE.md',
+        'ARCHITECTURE.md',
+        'CHANGELOG.md',
+        'llms.txt',
+        'SECURITY.md',
+        'CONTRIBUTING.md',
+        'CODE_OF_CONDUCT.md',
+    ],
     glob('docs/guides/*.md') ?: [],
     glob('BOOK/*.md') ?: [],
     glob('consumer-verification/*.md') ?: [],
+);
+
+/** Current-state consumer and governance docs; historical ADRs under dcos/ are deliberately excluded. */
+$currentStateDocuments = array_merge(
+    ['README.md',
+        'I18N_PACKAGE_REFERENCE.md',
+        'ARCHITECTURE.md',
+        'CHANGELOG.md',
+        'llms.txt',
+        'SECURITY.md',
+        'CONTRIBUTING.md',
+        'CODE_OF_CONDUCT.md',
+    ],
+    glob('docs/guides/*.md') ?: [],
+    glob('BOOK/*.md') ?: [],
 );
 
 $errors = [];
@@ -81,6 +104,7 @@ foreach ($documents as $document) {
     // 2. Claims that must not appear.
     $forbidden = [
         '/maatify\/i18n\b/i' => 'stale identity (the Composer identity is maatify/php-i18n)',
+        '/https?:\/\/github\.com\/Maatify\/i18n\b/i' => 'stale repository URL (the repository is Maatify/php-i18n)',
         '/img\.shields\.io\/packagist/i' => 'Packagist badge for an unpublished package',
         '/packagist\.org\/packages/i' => 'Packagist package link for an unpublished package',
         '/Status-(Stable|RC|Release)/i' => 'publication status claim',
@@ -95,6 +119,171 @@ foreach ($documents as $document) {
         if (preg_match($pattern, $text, $m) === 1) {
             $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
         }
+    }
+
+}
+
+// S15: the first RC is allocated for preparation, but has not been published.
+$readme = (string) file_get_contents('README.md');
+$changelog = (string) file_get_contents('CHANGELOG.md');
+$llms = (string) file_get_contents('llms.txt');
+$readmeHeader = explode("\n---\n", $readme, 2)[0];
+$canonicalLogo = '![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)';
+
+if (substr_count($readmeHeader, $canonicalLogo) !== 1
+    || preg_match_all('/!\[Maatify\.dev\]\([^\n)]+\)/', $readmeHeader) !== 1) {
+    $errors[] = 'README.md: header must use exactly the canonical Maatify logo source';
+}
+if (str_contains($readmeHeader, 'https://github.com/Maatify.png')) {
+    $errors[] = 'README.md: previous GitHub avatar logo source is forbidden';
+}
+if (preg_match('/<img\b[^>]*(?:maatify|logo)[^>]*>/i', $readmeHeader) === 1) {
+    $errors[] = 'README.md: HTML logo or custom logo sizing is forbidden';
+}
+foreach (explode("\n", $readmeHeader) as $line) {
+    if (preg_match('/Maatify\.dev|maatify_logo|github\.com\/Maatify\.png/i', $line) === 1
+        && preg_match('/\b(?:width|height|size)\s*=|\{[^}]*\b(?:width|height)\s*=/i', $line) === 1) {
+        $errors[] = 'README.md: custom logo sizing is forbidden';
+    }
+}
+
+if (preg_match('/^## \[1\.0\.0-rc\.1\]\R(.*?)(?=^## |\z)/ms', $changelog, $targetSection) !== 1
+    || preg_match('/^### Added$/m', $targetSection[1]) !== 1
+    || preg_match('/^- /m', $targetSection[1]) !== 1) {
+    $errors[] = 'CHANGELOG.md: initial contents must be allocated under the undated 1.0.0-rc.1 target';
+}
+if (preg_match('/^## \[Unreleased\]\R(.*?)(?=^## |\z)/ms', $changelog, $unreleasedSection) === 1
+    && trim($unreleasedSection[1]) !== '') {
+    $errors[] = 'CHANGELOG.md: allocated initial contents must not remain under Unreleased';
+}
+if (preg_match('/initial (?:package )?contents[^\n]*\[Unreleased\]/i', $changelog) === 1
+    || str_contains($readme, '[Unreleased]')
+    || str_contains($llms, '[Unreleased]')) {
+    $errors[] = 'Release navigation: initial contents must not be described as Unreleased after allocation';
+}
+if (preg_match('/^\[1\.0\.0-rc\.1\]:/m', $changelog) === 1) {
+    $errors[] = 'CHANGELOG.md: unpublished RC must have no release link';
+}
+
+if (!str_contains($readme, 'Release Target: `1.0.0-rc.1`')
+    || !str_contains($readme, 'Publication State: Unpublished')
+    || !str_contains($readmeHeader, 'Status-Development-blue')
+    || preg_match('#img\.shields\.io/badge/Version-#i', $readme) === 1) {
+    $errors[] = 'README.md: release target, unpublished state and Development badge must stay synchronized';
+}
+if (!str_contains($llms, 'Release Target 1.0.0-rc.1')
+    || !str_contains($llms, 'Publication State Unpublished')
+    || !str_contains($llms, '[CHANGELOG.md](CHANGELOG.md)')) {
+    $errors[] = 'llms.txt: exact RC target and unpublished navigation must stay synchronized';
+}
+foreach (['README.md' => $readme, 'CHANGELOG.md' => $changelog, 'llms.txt' => $llms] as $document => $text) {
+    if (preg_match('/(?:1\.0\.0-rc\.1|release candidate|\bRC\b)\s+(?:(?:is|was|has been)\s+)?(?:published|released|externally available|resolvable|installable)\b/i', $text) === 1
+        || preg_match('/\bPublication State:\s*(?:Published|Release Candidate|Stable)\b/i', $text) === 1
+        || preg_match('/\b(?:release|publication) date\b\s*[:=-]?\s*\d{4}-\d{2}-\d{2}\b/i', $text) === 1
+        || preg_match('/\b(?:is|was|has been)\s+(?:available|published)\s+(?:on|via)\s+Packagist\b/i', $text) === 1
+        || preg_match('#github\.com/Maatify/php-i18n/(?:releases/tag|tree|tags)/v?1\.0\.0-rc\.1\b#i', $text) === 1) {
+        $errors[] = $document . ': unpublished RC must not claim publication, distribution or an existing tag';
+    }
+}
+
+/** Current package documentation and schema must retain the standalone artifact identity. */
+$currentArtifactIdentitySurfaces = array_merge(
+    $currentStateDocuments,
+    ['schema/schema.i18n.sql'],
+);
+$staleArtifactForm = [
+    '/Embedded Base Module/i' => 'stale embedded-artifact form claim in a standalone package',
+    '/Modules\/I18n\b/i' => 'stale embedded module path in a standalone package',
+    '/\bI18n\s+module\b/i' => 'the standalone package is identified as a module',
+    '/\b(?:this|the)\s+module\b/i' => 'the standalone package is identified as a module',
+    '/\bmodule\s*\(\s*translation\s+layer\s*\)/i' => 'the standalone package is identified as a module',
+    '/\bcross-module\s+coupling\b/i' => 'stale module-framed package boundary wording',
+];
+foreach ($currentArtifactIdentitySurfaces as $document) {
+    $text = (string) file_get_contents($document);
+    foreach ($staleArtifactForm as $pattern => $reason) {
+        if (preg_match($pattern, $text, $m) === 1) {
+            $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
+        }
+    }
+}
+
+/** First-RC consumer documents describe current state, not unpublished engineering stages. */
+$stalePrePublicationLineage = [
+    '/\bpre-S1\b/i' => 'unpublished pre-S1 schema lineage in consumer documentation',
+    '/\bS1\s+(?:schema\s+)?(?:upgrade|migration)\b/i' => 'unpublished S1 upgrade or migration framing in consumer documentation',
+    '/\b(?:dcos|docs\/decisions)\//i' => 'internal decision-record path in consumer documentation',
+];
+$staleFirstRcOccurrences = 0;
+foreach ($currentStateDocuments as $document) {
+    $text = (string) file_get_contents($document);
+    foreach ($stalePrePublicationLineage as $pattern => $reason) {
+        $matches = preg_match_all($pattern, $text, $m);
+        $staleFirstRcOccurrences += $matches;
+        if ($matches > 0) {
+            $errors[] = sprintf('%s: "%s": %s', $document, $m[0][0], $reason);
+        }
+    }
+}
+
+// The current decision index is internal governance, not consumer navigation.
+// Keep its current-state framing clean without rewriting historical ADR bodies.
+$decisionIndex = (string) file_get_contents('docs/decisions/DECISIONS_INDEX.md');
+$staleDecisionIndexFraming = [
+    '/\bLegacy record\b/i' => 'legacy framing in the current Decision Index',
+    '/\bexisting legacy paths\b/i' => 'legacy path framing in the current Decision Index',
+    '/\bthis S1 change\b/i' => 'internal stage lineage in the current Decision Index',
+    '/\bpre-S1\b/i' => 'pre-publication lineage in the current Decision Index',
+    '/\bS1\s+(?:schema\s+)?(?:upgrade|migration)\b/i' => 'internal stage lineage in the current Decision Index',
+];
+foreach ($staleDecisionIndexFraming as $pattern => $reason) {
+    $matches = preg_match_all($pattern, $decisionIndex, $m);
+    $staleFirstRcOccurrences += $matches;
+    if ($matches > 0) {
+        $errors[] = sprintf('docs/decisions/DECISIONS_INDEX.md: "%s": %s', $m[0][0], $reason);
+    }
+}
+foreach (['ADR-018', 'ADR-019', 'ADR-020'] as $decisionId) {
+    $rowPattern = '/^\|\s*' . preg_quote($decisionId, '/')
+        . '\s*\|[^|]+\|\s*ACTIVE\s*\|[^|]+\|\s*\[[^\]]+\]\([^)]+\)\s*\|\s*'
+        . '\[Package Reference\]\([^)]+\)\s*\|/m';
+    if (preg_match($rowPattern, $decisionIndex) !== 1) {
+        $errors[] = 'docs/decisions/DECISIONS_INDEX.md: missing ACTIVE current decision row with record and Package Reference owner: ' . $decisionId;
+    }
+}
+
+// Keep both supported package archive mechanisms excluding pre-publication
+// decision and migration history from first-RC distribution artifacts.
+$requiredDistributionPaths = [
+    'dcos',
+    'docs/decisions',
+    'dcos/ADR-018-string-codes-instead-of-fk-in-i18n.md',
+    'dcos/ADR-019-host-owned-exact-language-code-in-i18n.md',
+    'docs/decisions/ADR-020-nullable-translation-type-metadata.md',
+    'docs/decisions/DECISIONS_INDEX.md',
+    'schema/migrations/2026-10-02-translation-type.sql',
+    'tests/Fixtures/Schema/schema.pre-s1.i18n.sql',
+    'tests/Integration/TranslationTypeMigrationTest.php',
+];
+$requiredComposerExclusions = [
+    '/dcos',
+    '/docs/decisions',
+    '/schema/migrations/2026-10-02-translation-type.sql',
+    '/tests/Fixtures/Schema/schema.pre-s1.i18n.sql',
+    '/tests/Integration/TranslationTypeMigrationTest.php',
+];
+$composerData = json_decode((string) file_get_contents('composer.json'), true);
+$composerExclusions = $composerData['archive']['exclude'] ?? [];
+foreach ($requiredComposerExclusions as $exclusion) {
+    if (!in_array($exclusion, $composerExclusions, true)) {
+        $errors[] = 'composer.json: archive.exclude is missing required path: ' . $exclusion;
+    }
+}
+foreach ($requiredDistributionPaths as $path) {
+    $attributeOutput = [];
+    exec('git check-attr export-ignore -- ' . escapeshellarg($path), $attributeOutput, $attributeStatus);
+    if ($attributeStatus !== 0 || !in_array($path . ': export-ignore: set', $attributeOutput, true)) {
+        $errors[] = '.gitattributes: export-ignore is missing for required path: ' . $path;
     }
 }
 
@@ -122,23 +311,28 @@ foreach ($notPublic as $short) {
     }
 }
 
-// PHP source documentation must use the current Composer and repository identity.
-$staleSourceIdentityOccurrences = 0;
-$sourceIterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator('src', FilesystemIterator::SKIP_DOTS),
-);
-foreach ($sourceIterator as $sourceFile) {
-    if (!$sourceFile instanceof SplFileInfo || $sourceFile->getExtension() !== 'php') {
-        continue;
-    }
-    $source = (string) file_get_contents($sourceFile->getPathname());
-    $staleSourceIdentityOccurrences += preg_match_all(
-        '/maatify\/i18n\b|maatify:i18n\b|https?:\/\/github\.com\/Maatify\/i18n\b/i',
-        $source,
+// PHP source and tests must use the current Composer and repository identity.
+$staleSourceTestIdentityOccurrences = 0;
+foreach (['src', 'tests'] as $sourceRoot) {
+    $sourceIterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($sourceRoot, FilesystemIterator::SKIP_DOTS),
     );
+    foreach ($sourceIterator as $sourceFile) {
+        if (!$sourceFile instanceof SplFileInfo || $sourceFile->getExtension() !== 'php') {
+            continue;
+        }
+        $source = (string) file_get_contents($sourceFile->getPathname());
+        $staleSourceTestIdentityOccurrences += preg_match_all(
+            '/maatify\/i18n\b|maatify:i18n\b|https?:\/\/github\.com\/Maatify\/i18n\b/i',
+            $source,
+        );
+    }
 }
-if ($staleSourceIdentityOccurrences !== 0) {
-    $errors[] = sprintf('src: %d stale package or repository identity occurrence(s)', $staleSourceIdentityOccurrences);
+if ($staleSourceTestIdentityOccurrences !== 0) {
+    $errors[] = sprintf(
+        'src/tests: %d stale package or repository identity occurrence(s)',
+        $staleSourceTestIdentityOccurrences,
+    );
 }
 
 // 3. llms.txt shape.
@@ -164,13 +358,11 @@ if (file_exists('HOW_TO_USE.md')) {
     $errors[] = 'HOW_TO_USE.md must not exist (docs/guides/USAGE_GUIDE.md is the only Usage Guide)';
 }
 
-// Embedded Base Artifact: Host-governance files are not Artifact-owned.
-foreach (['SECURITY.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'composer.lock'] as $absent) {
-    $tracked = [];
-    exec('git ls-files --error-unmatch ' . escapeshellarg($absent) . ' 2>/dev/null', $tracked, $code);
-    if ($code === 0) {
-        $errors[] = $absent . ' must not be tracked inside the Artifact Root';
-    }
+// Reusable-library Composer source must not track a dependency lock file.
+$trackedComposerLock = [];
+exec('git ls-files --error-unmatch -- composer.lock 2>/dev/null', $trackedComposerLock, $composerLockStatus);
+if ($composerLockStatus === 0) {
+    $errors[] = 'composer.lock must not be tracked in reusable-library source (COMPOSER_PACKAGE_STANDARD.md §25)';
 }
 
 if ($errors !== []) {
@@ -179,8 +371,9 @@ if ($errors !== []) {
 }
 
 echo sprintf(
-    "[i18n-docs] %d documents and %d src types: links, anchors, claims, API inventory, source identity (%d stale occurrences) and llms.txt shape are consistent\n",
+    "[i18n-docs] %d documents and %d src types: links, anchors, claims, API inventory, source/test identity (%d stale identity occurrences), first-RC current-state sweep (%d stale occurrences) and llms.txt shape are consistent\n",
     count($documents),
     $inventoried,
-    $staleSourceIdentityOccurrences,
+    $staleSourceTestIdentityOccurrences,
+    $staleFirstRcOccurrences,
 );

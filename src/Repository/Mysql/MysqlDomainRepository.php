@@ -34,6 +34,10 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         $this->support = new MysqlGovernanceTableSupport($this->gateway, 'maa_i18n_domains');
     }
 
+    /**
+     * Read the exact domain code, returning null only when no row matches.
+     * SHARE/UPDATE locking modes require an active transaction.
+     */
     public function getByCode(string $code, LockModeEnum $lock = LockModeEnum::NONE): ?DomainDTO
     {
         $row = $this->gateway->fetchOne(
@@ -46,6 +50,10 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         return $row === null ? null : $this->map($row);
     }
 
+    /**
+     * Read a domain by ID, returning null only when no row matches.
+     * SHARE/UPDATE locking modes require an active transaction.
+     */
     public function getById(int $id, LockModeEnum $lock = LockModeEnum::NONE): ?DomainDTO
     {
         $row = $this->gateway->fetchOne(
@@ -58,16 +66,25 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         return $row === null ? null : $this->map($row);
     }
 
+    /** Return active domains ordered by display position, then ID; may be empty. */
     public function listActive(): DomainCollectionDTO
     {
         return $this->listByCondition('WHERE is_active = 1', 'domain.listActive');
     }
 
+    /** Return all domains ordered by display position, then ID; may be empty. */
     public function listAll(): DomainCollectionDTO
     {
         return $this->listByCondition('', 'domain.listAll');
     }
 
+    /**
+     * Return active domains among the supplied codes ordered by display position,
+     * then code. Duplicate input codes are ignored; an empty or unmatched list
+     * returns no items.
+     *
+     * @param list<string> $codes
+     */
     public function listByCodes(array $codes): DomainCollectionDTO
     {
         $codes = array_values(array_unique($codes));
@@ -99,6 +116,13 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         return new DomainCollectionDTO($items);
     }
 
+    /**
+     * Return a paginated domain list with the assignment flag for the supplied
+     * scope. Filters and page selection come from the criteria; ordering and
+     * pagination are delegated to maatify/persistence.
+     *
+     * @return PageResult<DomainAssignmentDTO>
+     */
     public function pageWithAssignment(ScopeDomainListCriteria $criteria): PageResult
     {
         $where = [];
@@ -164,6 +188,13 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         );
     }
 
+    /**
+     * Return filtered domains as a page; the unfiltered total remains the full
+     * domain population, while the filtered count reflects the criteria.
+     * Pagination and ordering are delegated to maatify/persistence.
+     *
+     * @return PageResult<DomainDTO>
+     */
     public function search(DomainListCriteria $criteria): PageResult
     {
         $where = [];
@@ -207,6 +238,12 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         );
     }
 
+    /**
+     * Insert a domain at the supplied display position and return its new ID.
+     * A duplicate code is classified as DomainAlreadyExistsException.
+     *
+     * @throws DomainAlreadyExistsException
+     */
     public function create(CreateDomainCommand $command, int $sortOrder): int
     {
         try {
@@ -233,7 +270,8 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         return $this->gateway->lastInsertId('domain.create');
     }
 
-    public function updateMetadata(UpdateDomainMetadataCommand $command): void
+    /** Apply the command's supplied metadata; true means the SQL update changed a row. */
+    public function updateMetadata(UpdateDomainMetadataCommand $command): bool
     {
         $fields = [];
         $params = ['id' => $command->id];
@@ -248,22 +286,24 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
             $params['description'] = $command->description;
         }
 
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_domains SET ' . implode(', ', $fields) . ' WHERE id = :id',
             $params,
             'domain.updateMetadata',
-        );
+        ) > 0;
     }
 
-    public function setActive(int $id, bool $isActive): void
+    /** Persist the active state; true means the SQL update changed a row. */
+    public function setActive(int $id, bool $isActive): bool
     {
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_domains SET is_active = :is_active WHERE id = :id',
             ['id' => $id, 'is_active' => $isActive ? 1 : 0],
             'domain.setActive',
-        );
+        ) > 0;
     }
 
+    /** Change the stored code; a duplicate code is classified as DomainAlreadyExistsException. */
     public function changeCode(int $id, string $newCode): void
     {
         try {
@@ -281,16 +321,22 @@ final readonly class MysqlDomainRepository implements DomainRepositoryInterface
         }
     }
 
+    /**
+     * Return the next display position; callers serialize allocation by first
+     * locking this ordering scope in their active transaction.
+     */
     public function nextPosition(): int
     {
         return $this->support->nextPosition();
     }
 
+    /** Acquire the ordering lock used to serialize creates and moves; requires an active transaction. */
     public function lockOrderingScope(): void
     {
         $this->support->lockOrderingScope();
     }
 
+    /** Delegate the move to maatify/persistence; false means the domain row is missing. */
     public function moveToPosition(int $id, int $position): bool
     {
         return $this->support->moveToPosition($id, $position);

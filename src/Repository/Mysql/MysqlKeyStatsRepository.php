@@ -23,6 +23,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
      * BASIC MUTATIONS
      * ========================================================== */
 
+    /** Create a zero-count stats row only when absent; an existing row is unchanged. */
     public function createForKey(int $keyId): void
     {
         $this->gateway->write(
@@ -34,6 +35,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         );
     }
 
+    /** Delete a key's derived stats row; absence is a no-op. */
     public function deleteForKey(int $keyId): void
     {
         $this->gateway->write(
@@ -43,6 +45,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         );
     }
 
+    /** Atomically increment the derived translated count, creating it at one when absent. */
     public function incrementTranslated(int $keyId): void
     {
         $this->gateway->write(
@@ -54,6 +57,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         );
     }
 
+    /** Decrement the derived count atomically, creating or retaining zero rather than going negative. */
     public function decrementTranslated(int $keyId): void
     {
         $this->gateway->write(
@@ -70,6 +74,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         );
     }
 
+    /** Store the supplied count, clamping negative values to zero. */
     public function setTranslatedCount(
         int $keyId,
         int $translatedCount,
@@ -91,6 +96,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         );
     }
 
+    /** Return the stored derived count, or zero when no stats row exists. */
     public function getTranslatedCount(int $keyId): int
     {
         $row = $this->gateway->fetchOne(
@@ -108,8 +114,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
      * ========================================================== */
 
     /**
-     * Clear the derived table.
-     * Used in full rebuild.
+     * Clear the derived table before a full rebuild.
      *
      * DELETE (not TRUNCATE): TRUNCATE is DDL and implicitly commits, which
      * would break the single-transaction guarantee of I18nStatsRebuilder.
@@ -119,9 +124,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         $this->gateway->write('DELETE FROM maa_i18n_key_stats', [], 'keyStats.truncate');
     }
 
-    /**
-     * Rebuild a single key using authoritative maa_i18n_translations table.
-     */
+    /** Recompute this key's derived count from authoritative translations. */
     public function rebuildForKey(int $keyId): void
     {
         $this->gateway->write(
@@ -140,13 +143,7 @@ final readonly class MysqlKeyStatsRepository implements KeyStatsRepositoryInterf
         );
     }
 
-    /**
-     * Full rebuild for entire table.
-     *
-     * Pure SQL aggregation:
-     * - No PHP loops
-     * - No N+1
-     */
+    /** Recompute every current key's derived count from authoritative translations after the table is cleared. */
     public function rebuildAll(): void
     {
         $this->gateway->write(

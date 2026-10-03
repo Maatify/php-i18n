@@ -2,12 +2,12 @@
 
 /**
  * @copyright   ©2026 Maatify.dev
- * @Library     maatify/i18n
- * @Project     maatify:i18n
+ * @Library     maatify/php-i18n
+ * @Project     maatify:php-i18n
  * @author      Mohamed Abdulalim (megyptm) <mohamed@maatify.dev>
  * @since       2026-10-01 00:00
  * @see         https://www.maatify.dev Maatify.dev
- * @link        https://github.com/Maatify/i18n view Project on GitHub
+ * @link        https://github.com/Maatify/php-i18n view Project on GitHub
  * @note        Distributed in the hope that it will be useful - WITHOUT WARRANTY.
  */
 
@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Maatify\I18n\Tests\Integration;
 
 use Maatify\I18n\Consumer\Service\TranslationReadService;
+use Maatify\I18n\Consumer\Service\TranslationDomainReadService;
 use Maatify\I18n\Exception\I18nExceptionInterface;
 use Maatify\I18n\Exception\I18nStorageException;
 use Maatify\I18n\Repository\Mysql\MysqlDomainLanguageSummaryRepository;
@@ -72,6 +73,7 @@ final class StorageFailureTest extends MysqlIntegrationTestCase
     private static function reads(): array
     {
         $clock = new SystemClock(new \DateTimeZone('UTC'));
+        $domainReadService = static fn(PDO $p): TranslationDomainReadService => self::domainReadService($p, $clock);
 
         return [
             ['scope.getByCode', static fn(PDO $p) => (new MysqlScopeRepository($p))->getByCode('ct')],
@@ -97,7 +99,25 @@ final class StorageFailureTest extends MysqlIntegrationTestCase
                 new MysqlTranslationKeyRepository($p),
                 new MysqlTranslationRepository($p, new SystemClock(new \DateTimeZone('UTC'))),
             ))->getValue('ar', 'ct', 'home', 'k')],
+            ['consumer.getDomainValues', static fn(PDO $p) => $domainReadService($p)->getDomainValues('ar', 'ct', 'home')],
+            ['consumer.getDomainTranslations', static fn(PDO $p) => $domainReadService($p)->getDomainTranslations('ar', 'ct', 'home')],
         ];
+    }
+
+    private static function domainReadService(PDO $pdo, SystemClock $clock): TranslationDomainReadService
+    {
+        $scopeRepository = new MysqlScopeRepository($pdo);
+        $domainRepository = new MysqlDomainRepository($pdo);
+
+        return new TranslationDomainReadService(
+            new MysqlTranslationKeyRepository($pdo),
+            new MysqlTranslationRepository($pdo, $clock),
+            new I18nGovernancePolicyService(
+                $scopeRepository,
+                $domainRepository,
+                new MysqlDomainScopeRepository($pdo),
+            ),
+        );
     }
 
     public function testGenuineMissesStayMissesOnWorkingStorage(): void
@@ -168,6 +188,6 @@ final class StorageFailureTest extends MysqlIntegrationTestCase
 
         // key 999999 does not exist -> the FK rejects the row at execute()
         $this->expectException(I18nStorageException::class);
-        $repository->upsert('ar', 999999, 'value');
+        $repository->upsert('ar', 999999, 'value', null);
     }
 }

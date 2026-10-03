@@ -1,11 +1,16 @@
 {
     "name": "maatify/php-i18n",
-    "description": "Maatify I18n module: language-aware translation keys, values, scopes and governance.",
+    "description": "Database-driven internationalization library for structured translation keys, exact language scopes, governance, and MySQL persistence.",
     "keywords": [
         "i18n",
+        "internationalization",
+        "localization",
+        "translation",
+        "mysql",
         "php",
         "maatify"
     ],
+    "homepage": "https://github.com/Maatify/php-i18n",
     "type": "library",
     "license": "proprietary",
     "authors": [
@@ -15,6 +20,10 @@
             "homepage": "https://maatify.dev"
         }
     ],
+    "support": {
+        "issues": "https://github.com/Maatify/php-i18n/issues",
+        "source": "https://github.com/Maatify/php-i18n"
+    },
     "autoload": {
         "psr-4": {
             "Maatify\\I18n\\": "src/"
@@ -36,9 +45,8 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95",
-        "php-di/invoker": "^2.2",
         "php-di/php-di": "^7.1",
-        "phpstan/phpstan": "^2.1.29",
+        "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^12.0",
         "psr/container": "^1.1 || ^2.0"
     },
@@ -48,6 +56,7 @@
     },
     "scripts": {
         "analyse": "phpstan analyse --configuration=phpstan.neon --memory-limit=1G --no-progress",
+        "format": "php-cs-fixer fix --using-cache=no --config=.php-cs-fixer.dist.php",
         "test": [
             "@test:unit",
             "@test:integration"
@@ -107,6 +116,15 @@
             }
         }
     },
+    "archive": {
+        "exclude": [
+            "/dcos",
+            "/docs/decisions",
+            "/schema/migrations/2026-10-02-translation-type.sql",
+            "/tests/Fixtures/Schema/schema.pre-s1.i18n.sql",
+            "/tests/Integration/TranslationTypeMigrationTest.php"
+        ]
+    },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "scripts-descriptions": {
@@ -122,10 +140,11 @@
         "check:docs": "Documentation links, identity and release-claim consistency",
         "check:examples": "Smoke-execute every example against the disposable MySQL",
         "check:audit": "composer audit under the fail-closed dependency policy (needs Composer 2.10+)",
-        "check:workflows": "actionlint over every Host workflow (pinned, checksum-verified download; I18N_ACTIONLINT_USE_PATH=1 uses a local binary)",
+        "check:workflows": "actionlint over standalone repository workflows; actionlint must already be available on PATH",
         "verify:consumer": "Consumer Verification Harness: two clean runs from a separate Composer root",
         "verify:static": "Every local static, style, documentation, and workflow gate on the currently resolved dependency set",
         "verify": "Canonical Package verification gate set on the currently installed or resolved dependency set; compatibility modes run separately",
-        "check:style": "Non-mutating PHP-FIG PER Coding Style 3.1 verification: pinned PER-CS 3.0 fixer rules plus repository-owned checks for every 3.1 delta"
+        "check:style": "Non-mutating PHP-FIG PER Coding Style 3.1 verification: pinned PER-CS 3.0 fixer rules plus repository-owned checks for every 3.1 delta",
+        "format": "Mutating PHP CS Fixer formatter using the repository configuration"
     }
 }

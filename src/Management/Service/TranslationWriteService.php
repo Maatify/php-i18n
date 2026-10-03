@@ -6,6 +6,7 @@ namespace Maatify\I18n\Management\Service;
 
 use Maatify\I18n\Enum\LockModeEnum;
 use Maatify\I18n\Exception\LanguageCodeAlreadyInUseException;
+use Maatify\I18n\Exception\I18nInvalidArgumentException;
 use Maatify\I18n\Exception\TranslationKeyAlreadyExistsException;
 use Maatify\I18n\Exception\TranslationKeyCreateFailedException;
 use Maatify\I18n\Exception\TranslationKeyNotFoundException;
@@ -88,6 +89,7 @@ final readonly class TranslationWriteService
 
     /**
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
      * @throws TranslationKeyAlreadyExistsException
      */
     public function renameKey(RenameKeyCommand $command): void
@@ -137,18 +139,29 @@ final readonly class TranslationWriteService
 
     /**
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
      */
     public function updateKeyDescription(
         int $keyId,
         string $description,
     ): void {
-        $this->tx->run(function () use ($keyId, $description): void {
+        if ($keyId <= 0) {
+            throw I18nInvalidArgumentException::notPositive('keyId');
+        }
 
-            if ($this->keyRepository->getById($keyId, LockModeEnum::UPDATE) === null) {
+        $this->tx->run(function () use ($keyId, $description): void {
+            $key = $this->keyRepository->getById($keyId, LockModeEnum::UPDATE);
+            if ($key === null) {
                 throw new TranslationKeyNotFoundException($keyId);
             }
 
-            $this->keyRepository->updateDescription($keyId, $description);
+            if ($key->description === $description) {
+                return;
+            }
+
+            if (!$this->keyRepository->updateDescription($keyId, $description)) {
+                throw new TranslationKeyNotFoundException($keyId);
+            }
         });
     }
 
@@ -173,6 +186,7 @@ final readonly class TranslationWriteService
                 $command->languageCode,
                 $command->keyId,
                 $command->value,
+                $command->type,
             );
 
             if ($result->id <= 0) {
@@ -195,12 +209,27 @@ final readonly class TranslationWriteService
     }
 
     /**
+     * Delete the translation from its exact nullable language scope; null is
+     * unlocalized and a non-null code is technically validated without
+     * normalization. A non-positive key ID raises
+     * I18nInvalidArgumentException, an invalid code raises
+     * InvalidLanguageCodeException, and a missing key raises
+     * TranslationKeyNotFoundException. A missing exact translation is a
+     * successful no-op; when a row is deleted, derived counters are updated in
+     * the same transaction.
+     *
      * @throws TranslationKeyNotFoundException
+     * @throws I18nInvalidArgumentException when keyId is not positive
+     * @throws \Maatify\I18n\Exception\InvalidLanguageCodeException
      */
     public function deleteTranslation(
         ?string $languageCode,
         int $keyId,
     ): void {
+        if ($keyId <= 0) {
+            throw I18nInvalidArgumentException::notPositive('keyId');
+        }
+
         $exactCode = LanguageCode::fromNullable($languageCode)->value();
 
         $this->tx->run(function () use ($exactCode, $keyId): void {
@@ -209,10 +238,10 @@ final readonly class TranslationWriteService
                 throw new TranslationKeyNotFoundException($keyId);
             }
 
-            $affected = $this->translationRepository
+            $deleted = $this->translationRepository
                 ->deleteByLanguageAndKey($exactCode, $keyId);
 
-            if ($affected > 0) {
+            if ($deleted) {
                 // Must be inside same TX
                 $this->missingCounter->onTranslationDeleted(
                     $exactCode,

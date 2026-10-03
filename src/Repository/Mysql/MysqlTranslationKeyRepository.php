@@ -38,6 +38,12 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         $this->gateway = new PdoGateway($pdo);
     }
 
+    /**
+     * Insert the exact structured key and return its new ID; a duplicate
+     * identity is classified as TranslationKeyAlreadyExistsException.
+     *
+     * @throws TranslationKeyAlreadyExistsException
+     */
     public function create(CreateKeyCommand $command): int
     {
         try {
@@ -63,6 +69,10 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         return $this->gateway->lastInsertId('key.create');
     }
 
+    /**
+     * Read a key by ID, returning null only when no row matches. Non-NONE lock
+     * modes require an active transaction.
+     */
     public function getById(int $id, LockModeEnum $lock = LockModeEnum::NONE): ?TranslationKeyDTO
     {
         $row = $this->gateway->fetchOne(
@@ -74,6 +84,7 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         return $row === null ? null : $this->map($row);
     }
 
+    /** Look up the exact structured identity without normalization; return null when it is absent. */
     public function getByStructuredKey(
         string $scope,
         string $domain,
@@ -93,15 +104,17 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         return $row === null ? null : $this->map($row);
     }
 
-    public function updateDescription(int $id, ?string $description): void
+    /** Replace or clear the description; true means the SQL update changed a row. */
+    public function updateDescription(int $id, ?string $description): bool
     {
-        $this->gateway->write(
+        return $this->gateway->write(
             'UPDATE maa_i18n_keys SET description = :description WHERE id = :id',
             ['id' => $id, 'description' => $description],
             'key.updateDescription',
-        );
+        ) > 0;
     }
 
+    /** Rename the key's exact structured identity; duplicate identity raises TranslationKeyAlreadyExistsException. */
     public function rename(RenameKeyCommand $command): void
     {
         try {
@@ -128,6 +141,7 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         }
     }
 
+    /** Test whether any key uses this exact scope code; non-NONE lock modes require an active transaction. */
     public function existsForScope(string $scopeCode, LockModeEnum $lock = LockModeEnum::NONE): bool
     {
         return $this->gateway->exists(
@@ -137,6 +151,7 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         );
     }
 
+    /** Test whether any key uses this exact domain code; non-NONE lock modes require an active transaction. */
     public function existsForDomain(string $domainCode, LockModeEnum $lock = LockModeEnum::NONE): bool
     {
         return $this->gateway->exists(
@@ -146,6 +161,7 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         );
     }
 
+    /** Return keys for this exact scope/domain ordered by key part; no matches yields an empty collection. */
     public function listByScopeAndDomain(
         string $scope,
         string $domain,
@@ -168,6 +184,13 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         return new TranslationKeyCollectionDTO($items);
     }
 
+    /**
+     * Return a page of keys constrained to the criteria's scope. The total is
+     * the global key population; the filtered count includes the required scope
+     * and optional filters. Default order is ID ascending.
+     *
+     * @return PageResult<TranslationKeyDTO>
+     */
     public function search(KeyListCriteria $criteria): PageResult
     {
         $where = ['k.scope = :scope'];
@@ -246,6 +269,10 @@ final readonly class MysqlTranslationKeyRepository implements TranslationKeyRepo
         );
     }
 
+    /**
+     * Return the enum's SQL lock suffix; non-NONE modes require an active
+     * transaction and otherwise raise LogicException.
+     */
     private function lockSuffix(LockModeEnum $lock): string
     {
         if ($lock !== LockModeEnum::NONE && !$this->gateway->pdo()->inTransaction()) {

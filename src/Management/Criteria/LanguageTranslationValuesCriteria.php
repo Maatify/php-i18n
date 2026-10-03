@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Maatify\I18n\Management\Criteria;
 
 use Maatify\I18n\Exception\I18nInvalidArgumentException;
+use Maatify\I18n\ValueObject\LanguageCode;
 use Maatify\Persistence\Pdo\Pagination\PageRequest;
 
 /**
@@ -14,7 +15,7 @@ use Maatify\Persistence\Pdo\Pagination\PageRequest;
 final readonly class LanguageTranslationValuesCriteria
 {
     /**
-     * Requires a non-empty exact language code; whitespace is preserved as-is.
+     * Requires a technically valid exact language code without normalization.
      *
      * @throws I18nInvalidArgumentException
      */
@@ -28,8 +29,16 @@ final readonly class LanguageTranslationValuesCriteria
         public ?string $valueLike = null,
         public PageRequest $page = new PageRequest(),
     ) {
-        if ($languageCode === '') {
+        if (LanguageCode::tryFromNullable($languageCode) === null) {
+            if (mb_strlen($languageCode) > LanguageCode::MAX_LENGTH) {
+                throw I18nInvalidArgumentException::tooLong('languageCode', LanguageCode::MAX_LENGTH);
+            }
+
             throw I18nInvalidArgumentException::emptyField('languageCode');
+        }
+
+        if ($id !== null && $id <= 0) {
+            throw I18nInvalidArgumentException::notPositive('id');
         }
     }
 }

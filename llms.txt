@@ -1,6 +1,6 @@
 # Maatify I18n (maatify/php-i18n)
 
-> Governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft reads, management reads and operational facts. Language identity and fallback stay with the Host. Development state, unpublished, embedded Base Module.
+> Governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft reads, management reads and operational facts. Language identity and fallback stay with the Host. Standalone Composer package / standalone repository; Release Target 1.0.0-rc.1 in preparation, Publication State Unpublished, with no tag, GitHub Release or Packagist publication.
 
 This file is for an AI agent that consumes the package, not one that modifies it. The supported contract is what the linked consumer documents describe. Visible in the repository does not mean supported: do not treat `src/` internals, tests, fixtures, scripts, undocumented classes or methods, or internal engineering files as a consumer contract, and do not invent a contract the documents below do not state.
 
@@ -13,11 +13,10 @@ This file is for an AI agent that consumes the package, not one that modifies it
 
 ## Release and state
 
-- [CHANGELOG.md](CHANGELOG.md): change history (nothing is released yet).
+- [CHANGELOG.md](CHANGELOG.md): initial package contents allocated to exact target `1.0.0-rc.1`; release preparation is active and publication state is Unpublished.
 - [composer.json](composer.json): the only owner of package identity, PHP and extension requirements, dependencies and autoload.
 
 ## Deeper documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): component boundaries and consistency model.
 - [BOOK/INDEX.md](BOOK/INDEX.md): conceptual documentation; the Package Reference prevails if they differ.
-- [dcos/ADR-019-host-owned-exact-language-code-in-i18n.md](dcos/ADR-019-host-owned-exact-language-code-in-i18n.md): why language identity is Host-owned and exact.

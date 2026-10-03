@@ -63,17 +63,27 @@ The `upsertTranslation` method inserts or updates a translation value.
 ```php
 // Set English Value (exact language code)
 $translationId = $service->upsertTranslation(
-    new UpsertTranslationCommand(languageCode: 'en-US', keyId: $keyId, value: 'Welcome Back')
+    new UpsertTranslationCommand(languageCode: 'en-US', keyId: $keyId, value: 'Welcome Back', type: null)
 );
 
 // Update English Value (Overwrites previous)
 $translationId = $service->upsertTranslation(
-    new UpsertTranslationCommand(languageCode: 'en-US', keyId: $keyId, value: 'Please Log In')
+    new UpsertTranslationCommand(languageCode: 'en-US', keyId: $keyId, value: 'Please Log In', type: null)
 );
 
 // Single-language consumer: the exact unlocalized scope
 $translationId = $service->upsertTranslation(
-    new UpsertTranslationCommand(languageCode: null, keyId: $keyId, value: 'Welcome')
+    new UpsertTranslationCommand(languageCode: null, keyId: $keyId, value: 'Welcome', type: null)
+);
+
+// This example consumer defines its own opaque type token.
+$translationId = $service->upsertTranslation(
+    new UpsertTranslationCommand(
+        languageCode: 'en-US',
+        keyId: $keyId,
+        value: '<p>Formatted copy</p>',
+        type: 'client.rich-copy',
+    )
 );
 ```
 
@@ -83,6 +93,8 @@ $translationId = $service->upsertTranslation(
 *   Synchronously refreshes the exact-scope summary row and the per-key counter if a new record is created.
 *   The language code is only checked against the storage contract (`InvalidLanguageCodeException`); I18n never looks the language up.
 *   `updated_at` timestamp is refreshed.
+*   `type` is required explicitly on every command: `null` means no type metadata, and any valid non-null token is exact, opaque and consumer-defined. It is stored atomically with `value` and never changes row identity or completeness counts.
+*   Type transitions (`null` to a consumer-defined token and back) update the existing translation row. The Package leaves `value` opaque and does not render or sanitize it; the consumer owns output handling.
 
 ## 5. Deleting Translations
 
@@ -116,6 +128,6 @@ $rekeyed = $service->rekeyLanguageCode(oldCode: 'ar', newCode: 'ar-EG');
 
 **Status: NOT SUPPORTED**
 
-The module does not support deleting keys (`deleteKey`).
+The package does not support deleting keys (`deleteKey`).
 *   **Rationale:** Deleting keys breaks historical context and referential integrity in consuming applications.
 *   **Strategy:** Deprecated keys should be left as-is or renamed with a `deprecated.` prefix if necessary.

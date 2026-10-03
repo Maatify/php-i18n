@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Maatify\I18n\Consumer\Service;
 
+use Maatify\I18n\Consumer\DTO\TranslationValueDTO;
 use Maatify\I18n\Repository\TranslationKeyRepositoryInterface;
 use Maatify\I18n\Repository\TranslationRepositoryInterface;
 use Maatify\I18n\ValueObject\LanguageCode;
-use Maatify\I18n\Exception\InvalidLanguageCodeException;
 
 /**
- * Provides fail-soft exact-scope translation reads. A miss returns `null`; the service never applies a language fallback.
+ * Provides fail-soft exact-scope translation reads. Invalid codes and misses
+ * return `null`; repository storage failures propagate unchanged.
  */
 final readonly class TranslationReadService
 {
@@ -21,7 +22,8 @@ final readonly class TranslationReadService
 
     /**
      * Safe exact read (ADR-019):
-     * - No exceptions
+     * - Invalid codes and missing identities return null
+     * - Repository storage failures propagate
      * - No parsing
      * - Structured key only
      * - Exact scope only: `$languageCode` reads that code, `null` reads the
@@ -36,9 +38,23 @@ final readonly class TranslationReadService
         string $domain,
         string $key,
     ): ?string {
-        try {
-            $exactCode = LanguageCode::fromNullable($languageCode);
-        } catch (InvalidLanguageCodeException) {
+        return $this->getTranslation($languageCode, $scope, $domain, $key)?->value;
+    }
+
+    /**
+     * Reads the value and optional type from one exact language scope.
+     *
+     * A missing row, unknown key, or invalid code returns null. The method
+     * does not apply language fallback or interpret the translation value.
+     */
+    public function getTranslation(
+        ?string $languageCode,
+        string $scope,
+        string $domain,
+        string $key,
+    ): ?TranslationValueDTO {
+        $exactCode = LanguageCode::tryFromNullable($languageCode);
+        if ($exactCode === null) {
             return null; // fail-soft: an invalid code can own no row
         }
 
@@ -49,8 +65,11 @@ final readonly class TranslationReadService
             return null;
         }
 
-        return $this->translationRepository
-            ->getByLanguageAndKey($exactCode->value(), $translationKey->id)
-            ?->value;
+        $translation = $this->translationRepository
+            ->getByLanguageAndKey($exactCode->value(), $translationKey->id);
+
+        return $translation === null
+            ? null
+            : new TranslationValueDTO($translation->value, $translation->type);
     }
 }

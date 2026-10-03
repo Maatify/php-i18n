@@ -101,6 +101,8 @@ final readonly class PdoGateway
     public function exists(string $sql, array $params, string $operation): bool
     {
         $stmt = $this->run($sql, $params, $operation);
+
+        /** @var array<int, mixed>|false $row */
         $row = $stmt->fetch(PDO::FETCH_NUM);
 
         if ($row === false) {
@@ -187,6 +189,10 @@ final readonly class PdoGateway
         return $row;
     }
 
+    /**
+     * After fetch returns false, treat error code 00000 as result exhaustion;
+     * any other statement error code raises I18nStorageException.
+     */
     private function assertNoFetchError(PDOStatement $stmt, string $operation): void
     {
         if ($stmt->errorCode() !== '00000') {

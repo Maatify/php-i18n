@@ -31,8 +31,33 @@ final readonly class LanguageCode
      */
     public static function fromNullable(?string $code): self
     {
+        $languageCode = self::tryFromNullable($code);
+
+        if ($languageCode !== null) {
+            return $languageCode;
+        }
+
+        if ($code === null) {
+            return new self(null);
+        }
+
+        throw new InvalidLanguageCodeException($code);
+    }
+
+    /**
+     * Package-internal non-throwing factory for boundaries that need
+     * fail-soft technical validation.
+     *
+     * Creates an exact language scope without throwing for an invalid code.
+     * A null input is valid and represents the unlocalized scope; a null
+     * result means a non-null input violated the technical code contract.
+     *
+     * @internal This is not part of the supported consumer API.
+     */
+    public static function tryFromNullable(?string $code): ?self
+    {
         if ($code !== null && (trim($code) === '' || mb_strlen($code) > self::MAX_LENGTH)) {
-            throw new InvalidLanguageCodeException($code);
+            return null;
         }
 
         return new self($code);

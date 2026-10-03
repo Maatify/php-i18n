@@ -1,0 +1,290 @@
+name: I18n Package CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: i18n-package-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  COMPOSER_VERSION: "2.10.3"
+  COMPOSER_NO_INTERACTION: "1"
+
+jobs:
+  workflow-lint:
+    name: Workflow Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download and verify actionlint 1.7.12
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/actionlint_1.7.12_linux_amd64.tar.gz"
+          actionlint_dir="${RUNNER_TEMP}/actionlint-1.7.12"
+          curl --fail --location --silent --show-error \
+            --output "${archive}" \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          printf '%s  %s\n' \
+            '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' \
+            "${archive}" | sha256sum --check --strict
+          mkdir -- "${actionlint_dir}"
+          tar -xzf "${archive}" -C "${actionlint_dir}" actionlint
+          "${actionlint_dir}/actionlint" -version
+          printf '%s\n' "${actionlint_dir}" >> "${GITHUB_PATH}"
+
+      - name: Lint every workflow
+        run: bash scripts/ci/lint-workflows.sh
+
+  quality:
+    name: Quality (PHP 8.4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.4"
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Resolve dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Composer validation
+        run: composer check:composer
+
+      - name: Platform requirements
+        run: composer check:platform
+
+      - name: Strict optimized production autoload
+        run: composer check:autoload
+
+      - name: PHP syntax
+        run: composer check:syntax
+
+      - name: PHPStan (level max)
+        run: composer analyse
+
+      - name: PHP-FIG PER Coding Style 3.1
+        run: composer check:style
+
+      - name: Whitespace
+        run: composer check:whitespace
+
+      - name: Documentation consistency
+        run: composer check:docs
+
+  unit:
+    name: Unit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.4", "8.5"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Resolve dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Unit suite
+        run: composer test:unit
+
+  integration:
+    name: Integration (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.4", "8.5"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Resolve dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Real-MySQL Integration suite (Package-owned Compose lifecycle)
+        run: composer test:integration
+
+  dependencies:
+    name: Dependencies (${{ matrix.mode }}, PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: latest
+            php: "8.5"
+          - mode: lowest
+            php: "8.4"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Resolve latest-compatible dependencies
+        if: matrix.mode == 'latest'
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Resolve lowest-supported dependencies
+        if: matrix.mode == 'lowest'
+        run: composer update --prefer-lowest --prefer-stable --no-interaction --prefer-dist --no-progress
+
+      - name: Platform requirements
+        run: composer check:platform
+
+      - name: PHPStan (level max)
+        run: composer analyse
+
+      - name: PHP-FIG PER Coding Style 3.1
+        run: composer check:style
+
+      - name: Unit suite
+        run: composer test:unit
+
+      - name: Real-MySQL Integration suite
+        run: composer test:integration
+
+  examples:
+    name: Examples (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.4", "8.5"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Resolve dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Smoke-execute every example (Package-owned Compose lifecycle)
+        run: composer check:examples
+
+  consumer-verification:
+    name: Consumer Verification (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.4", "8.5"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Consumer Verification Harness (two clean runs)
+        run: composer verify:consumer
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: "8.4"
+          extensions: mbstring, pdo, pdo_mysql
+          tools: composer:${{ env.COMPOSER_VERSION }}
+          coverage: none
+
+      - name: Resolve dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Composer audit (fail-closed dependency policy)
+        env:
+          COMPOSER_NO_AUDIT: ""
+        run: composer check:audit
+
+  package-ci-gate:
+    name: I18n Package CI Gate
+    if: always()
+    needs:
+      - workflow-lint
+      - quality
+      - unit
+      - integration
+      - dependencies
+      - examples
+      - consumer-verification
+      - audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every required job must have succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${NEEDS}" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          if printf '%s\n' "${NEEDS}" | jq -e 'to_entries | all(.value.result == "success")' >/dev/null; then
+            echo "All required I18n package jobs succeeded."
+          else
+            echo "At least one required I18n package job did not succeed (failure, cancelled or skipped)." >&2
+            exit 1
+          fi

@@ -61,8 +61,11 @@ final class PerCs31SourceChecker
                         }
                     }
                     $caseEnd = self::findCaseEnd($tokens, $colon + 1);
-                    if ($caseEnd !== null && !self::caseEndsWithTerminator($tokens, $colon + 1, $caseEnd)
-                        && self::nextIndex($tokens, $colon + 1) !== $caseEnd) {
+                    $caseIsEmpty = $caseEnd !== null
+                        && self::nextIndex($tokens, $colon + 1) === $caseEnd;
+                    if ($caseEnd !== null && !$caseIsEmpty
+                        && !self::caseEndsWithTerminator($tokens, $colon + 1, $caseEnd)
+                        && !self::hasMarkedFallThrough($tokens, $colon + 1, $caseEnd)) {
                         $errors[] = self::location($file, $line) . ' every non-empty case must end with a terminating statement';
                     }
                 }
@@ -520,6 +523,75 @@ final class PerCs31SourceChecker
         return $lastStatementStart !== null
             && is_array($tokens[$lastStatementStart])
             && in_array($tokens[$lastStatementStart][0], $terminators, true);
+    }
+
+    /** @param list<array{int, string, int}|string> $tokens */
+    private static function hasMarkedFallThrough(array $tokens, int $start, int $end): bool
+    {
+        if (!self::isToken($tokens[$end] ?? null, T_CASE)
+            && !self::isToken($tokens[$end] ?? null, T_DEFAULT)) {
+            return false;
+        }
+
+        for ($index = $end - 1; $index >= $start; $index--) {
+            $token = $tokens[$index];
+            if (self::isToken($token, T_WHITESPACE)) {
+                continue;
+            }
+
+            if (!is_array($token) || !in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                return false;
+            }
+
+            return self::isClearFallThroughComment($token[1]);
+        }
+
+        return false;
+    }
+
+    private static function isClearFallThroughComment(string $comment): bool
+    {
+        $content = preg_replace('/^\\s*(?:\\/\\/|#|\\/\\*+)|\\*\\/\\s*$/m', ' ', $comment) ?? $comment;
+        $content = preg_replace('/^\\s*\\*\\s?/m', ' ', $content) ?? $content;
+        $normalized = strtolower($content);
+        $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized) ?? $normalized;
+        $normalized = trim(preg_replace('/\\s+/', ' ', $normalized) ?? $normalized);
+
+        $fallThrough = '(?:fall through|falls through|falling through)';
+        $marker = '(?:no break|' . $fallThrough . ')';
+        $nonDeliberate = '(?:accidental(?:ly)?|unintended|unintentional(?:ly)?|bug|error|mistake)';
+        $negativeLead = '(?:never|avoid|prevent|do not|does not|should not|must not|will not|don t|doesn t|shouldn t|mustn t|not)';
+        $uncertainty = '(?:maybe|may|might|could|possibly|perhaps)';
+        $negativePatterns = [
+            '/\\bno\\s+' . $fallThrough . '\\b/',
+            '/\\b(?:(?:a|an|the)\\s+)?' . $nonDeliberate . '\\s+' . $marker . '\\b/',
+            '/\\b' . $marker . '\\s+(?:(?:is|was|would be)\\s+)?(?:an?\\s+)?'
+                . $nonDeliberate . '\\b/',
+            '/\\b' . $marker . '\\s+by\\s+(?:mistake|accident)\\b/',
+            '/\\b' . $marker . '\\s+(?:(?:is|was)\\s+)?not\\s+'
+                . '(?:intentional|deliberate|intended|allowed|desired)\\b/',
+            '/\\b' . $negativeLead . '(?:\\s+\\w+){0,2}\\s+' . $marker . '\\b/',
+            '/\\b' . $marker . '\\s+(?:(?:is|was|would be)\\s+)?(?:never|not)\\b/',
+            '/\\b' . $marker . '\\s+(?:(?:should|must|do|does|will)\\s+)?(?:not|never)\\b/',
+            '/\\b' . $marker . '\\s+(?:(?:should|must|will)\\s+)?(?:be\\s+)?(?:avoided|prevented)\\b/',
+            '/\\b' . $uncertainty . '(?:\\s+\\w+){0,2}\\s+' . $marker . '\\b/',
+            '/\\b' . $marker . '(?:\\s+\\w+){0,3}\\s+' . $uncertainty . '\\b/',
+        ];
+        foreach ($negativePatterns as $negativePattern) {
+            if (preg_match($negativePattern, $normalized) === 1) {
+                return false;
+            }
+        }
+
+        if (preg_match('/\\bno break\\b/', $normalized) === 1) {
+            return true;
+        }
+
+        $qualifier = '(?:intentional|intentionally|deliberate|deliberately)';
+        $clearFallThrough = '/\\b(?:' . $qualifier . '\\s+)?' . $fallThrough
+            . '(?:\\s+(?:' . $qualifier . '|on purpose|by design))?\\b/';
+
+        return preg_match($clearFallThrough, $normalized) === 1;
     }
 
     /** @param list<array{int, string, int}|string> $tokens */

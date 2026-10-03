@@ -25,6 +25,11 @@ final class I18nErrorPolicy implements ErrorPolicyInterface
         return self::$instance ??= new self();
     }
 
+    /**
+     * Enforce the allowed code set for known I18n categories; a disallowed code
+     * raises LogicException. Categories not owned by I18n are ignored, and
+     * validation does not mutate either argument.
+     */
     public function validate(
         ErrorCodeInterface $code,
         ErrorCategoryInterface $category,
@@ -46,6 +51,7 @@ final class I18nErrorPolicy implements ErrorPolicyInterface
         }
     }
 
+    /** Return the severity delegated to the shared DefaultErrorPolicy. */
     public function severity(ErrorCategoryInterface $category): int
     {
         return DefaultErrorPolicy::default()->severity($category);

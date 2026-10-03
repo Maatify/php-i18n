@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Maatify\I18n\Management\Criteria;
 
 use Maatify\I18n\Exception\I18nInvalidArgumentException;
+use Maatify\I18n\ValueObject\LanguageCode;
 use Maatify\Persistence\Pdo\Pagination\PageRequest;
 
 /**
@@ -17,8 +18,8 @@ final readonly class DomainKeySummaryCriteria
 {
     /**
      * @param list<string> $languageCodes
-     * @throws I18nInvalidArgumentException when scope/domain is blank or a
-     *     language code is the empty string; language codes are not normalized
+     * @throws I18nInvalidArgumentException when scope/domain is blank, keyId
+     *     is not positive, or a language code violates the technical contract
      */
     public function __construct(
         public string $scopeCode,
@@ -38,8 +39,16 @@ final readonly class DomainKeySummaryCriteria
             throw I18nInvalidArgumentException::emptyField('domainCode');
         }
 
+        if ($keyId !== null && $keyId <= 0) {
+            throw I18nInvalidArgumentException::notPositive('keyId');
+        }
+
         foreach ($languageCodes as $code) {
-            if ($code === '') {
+            if (LanguageCode::tryFromNullable($code) === null) {
+                if (mb_strlen($code) > LanguageCode::MAX_LENGTH) {
+                    throw I18nInvalidArgumentException::tooLong('languageCodes', LanguageCode::MAX_LENGTH);
+                }
+
                 throw I18nInvalidArgumentException::emptyField('languageCodes');
             }
         }

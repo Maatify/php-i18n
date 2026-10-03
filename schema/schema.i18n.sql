@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS maa_i18n_scopes;
 SET FOREIGN_KEY_CHECKS=1;
 
 /* ==========================================================
- * I18N MODULE (TRANSLATION LAYER) — PACKAGE SCHEMA
+ * I18N PACKAGE — TRANSLATION LAYER SCHEMA
  * ----------------------------------------------------------
  * Authoritative fresh-install schema of the I18n package.
  * Package-owned tables (the complete set, `maa_i18n_` prefix):
@@ -268,6 +268,9 @@ CREATE TABLE maa_i18n_translations (
 
     value TEXT NOT NULL
         COMMENT 'Translated value; empty string is an authoritative empty translation',
+    type VARCHAR(32)
+        CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL
+        COMMENT 'Exact optional consumer-defined type metadata; no rendering or sanitization (ADR-020)',
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         COMMENT 'Creation timestamp',
@@ -281,6 +284,16 @@ CREATE TABLE maa_i18n_translations (
 
     CONSTRAINT chk_maa_i18n_translations_language_code
         CHECK (language_code IS NULL OR (CHAR_LENGTH(TRIM(language_code)) > 0 AND CHAR_LENGTH(language_code) <= 16)),
+    CONSTRAINT chk_maa_i18n_translations_type
+        CHECK (
+            type IS NULL OR (
+                CHAR_LENGTH(type) BETWEEN 1 AND 32
+                AND type NOT REGEXP CONCAT(
+                    '^[[:space:]', CONVERT(CHAR(11) USING utf8mb4), CONVERT(CHAR(12) USING utf8mb4),
+                    CONVERT(0xC285 USING utf8mb4), CONVERT(CHAR(92) USING utf8mb4), 'p{Z}]*$'
+                )
+            )
+        ),
 
     CONSTRAINT fk_maa_i18n_translation_key
         FOREIGN KEY (key_id)
@@ -290,7 +303,7 @@ CREATE TABLE maa_i18n_translations (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci
-    COMMENT='Translated values mapped by exact (key + nullable language_code). Host-owned language identity, no fallback. ADR-019.';
+    COMMENT='Translated values mapped by exact (key + nullable language_code). Optional opaque type metadata. ADR-019, ADR-020.';
 
 /* ==========================================================
  * 6) DOMAIN LANGUAGE SUMMARY (DERIVED AGGREGATION LAYER)
@@ -380,7 +393,7 @@ CREATE TABLE maa_i18n_domain_language_summary (
  * Nature:
  * - Derived data (NON-authoritative)
  * - Fully rebuildable at any time
- * - Maintained by i18n module only
+ * - Maintained by the I18n package only
  *
  * Identity:
  * - `id` is the primary key.

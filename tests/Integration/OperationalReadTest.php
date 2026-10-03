@@ -2,12 +2,12 @@
 
 /**
  * @copyright   ©2026 Maatify.dev
- * @Library     maatify/i18n
- * @Project     maatify:i18n
+ * @Library     maatify/php-i18n
+ * @Project     maatify:php-i18n
  * @author      Mohamed Abdulalim (megyptm) <mohamed@maatify.dev>
  * @since       2026-10-01 00:00
  * @see         https://www.maatify.dev Maatify.dev
- * @link        https://github.com/Maatify/i18n view Project on GitHub
+ * @link        https://github.com/Maatify/php-i18n view Project on GitHub
  * @note        Distributed in the hope that it will be useful - WITHOUT WARRANTY.
  */
 
@@ -38,12 +38,12 @@ final class OperationalReadTest extends MysqlIntegrationTestCase
         $c1 = $this->createKey('ct', 'cart', 'c1');
         $x1 = $this->createKey('ad', 'auth', 'x1');
 
-        $this->upsert('ar', $h1, 'x');
-        $this->upsert('ar', $h2, 'x');
-        $this->upsert('en', $h1, 'x');
-        $this->upsert('ar', $a1, 'x');
-        $this->upsert(null, $c1, 'x');
-        $this->upsert('AR', $x1, 'x'); // another exact code than 'ar'
+        $this->upsert('ar', $h1, 'x', null);
+        $this->upsert('ar', $h2, 'x', null);
+        $this->upsert('en', $h1, 'x', null);
+        $this->upsert('ar', $a1, 'x', null);
+        $this->upsert(null, $c1, 'x', null);
+        $this->upsert('AR', $x1, 'x', null); // another exact code than 'ar'
     }
 
     public function testTotalsAndGroupings(): void
@@ -122,8 +122,28 @@ final class OperationalReadTest extends MysqlIntegrationTestCase
 
     public function testDomainCoverageRejectsAnEmptyCode(): void
     {
-        $this->expectException(I18nInvalidArgumentException::class);
-        $this->operationalRead->domainCoverage('ct', '');
+        foreach (['', " \t\n", str_repeat('x', 17)] as $invalid) {
+            try {
+                $this->operationalRead->domainCoverage('ct', $invalid);
+                self::fail('Expected the exact language-code contract to reject the input.');
+            } catch (I18nInvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testDomainCoverageUsesAValidLanguageCodeExactlyAsSupplied(): void
+    {
+        $keyId = $this->createKey('ct', 'home', 'custom-code');
+        $this->upsert('custom.CODE', $keyId, 'value', null);
+
+        $counts = [];
+        foreach ($this->operationalRead->domainCoverage('ct', 'custom.CODE') as $row) {
+            $counts[$row->domainCode] = $row->translatedCount;
+        }
+
+        ksort($counts);
+        self::assertSame(['auth' => 0, 'cart' => 0, 'home' => 1], $counts);
     }
 
     public function testSummaryAndKeyStatsRebuildKeepsTheFactsEquivalent(): void

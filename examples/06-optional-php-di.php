@@ -78,7 +78,12 @@ $scopes->create(new CreateScopeCommand('web', 'Website'));
 $domains->create(new CreateDomainCommand('home', 'Home page'));
 $assignments->assign('web', 'home');
 $keyId = $writer->createKey(new CreateKeyCommand('web', 'home', 'title'));
-$writer->upsertTranslation(new UpsertTranslationCommand('en', $keyId, 'Welcome'));
+$writer->upsertTranslation(new UpsertTranslationCommand(
+    languageCode: 'en',
+    keyId: $keyId,
+    value: 'Welcome',
+    type: null,
+));
 
 example_expect('the container-built services behave like the manual Core', 'Welcome', $reader->getValue('en', 'web', 'home', 'title'));
 example_expect('exact missing is unchanged', null, $reader->getValue('ar', 'web', 'home', 'title'));
