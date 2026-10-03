@@ -149,14 +149,76 @@ foreach ($currentArtifactIdentitySurfaces as $document) {
 $stalePrePublicationLineage = [
     '/\bpre-S1\b/i' => 'unpublished pre-S1 schema lineage in consumer documentation',
     '/\bS1\s+(?:schema\s+)?(?:upgrade|migration)\b/i' => 'unpublished S1 upgrade or migration framing in consumer documentation',
-    '/\bdcos\//i' => 'historical decision-record path in consumer documentation',
+    '/\b(?:dcos|docs\/decisions)\//i' => 'internal decision-record path in consumer documentation',
 ];
+$staleFirstRcOccurrences = 0;
 foreach ($currentStateDocuments as $document) {
     $text = (string) file_get_contents($document);
     foreach ($stalePrePublicationLineage as $pattern => $reason) {
-        if (preg_match($pattern, $text, $m) === 1) {
-            $errors[] = sprintf('%s: "%s": %s', $document, $m[0], $reason);
+        $matches = preg_match_all($pattern, $text, $m);
+        $staleFirstRcOccurrences += $matches;
+        if ($matches > 0) {
+            $errors[] = sprintf('%s: "%s": %s', $document, $m[0][0], $reason);
         }
+    }
+}
+
+// The current decision index is internal governance, not consumer navigation.
+// Keep its current-state framing clean without rewriting historical ADR bodies.
+$decisionIndex = (string) file_get_contents('docs/decisions/DECISIONS_INDEX.md');
+$staleDecisionIndexFraming = [
+    '/\bLegacy record\b/i' => 'legacy framing in the current Decision Index',
+    '/\bexisting legacy paths\b/i' => 'legacy path framing in the current Decision Index',
+    '/\bthis S1 change\b/i' => 'internal stage lineage in the current Decision Index',
+    '/\bpre-S1\b/i' => 'pre-publication lineage in the current Decision Index',
+    '/\bS1\s+(?:schema\s+)?(?:upgrade|migration)\b/i' => 'internal stage lineage in the current Decision Index',
+];
+foreach ($staleDecisionIndexFraming as $pattern => $reason) {
+    $matches = preg_match_all($pattern, $decisionIndex, $m);
+    $staleFirstRcOccurrences += $matches;
+    if ($matches > 0) {
+        $errors[] = sprintf('docs/decisions/DECISIONS_INDEX.md: "%s": %s', $m[0][0], $reason);
+    }
+}
+foreach (['ADR-018', 'ADR-019', 'ADR-020'] as $decisionId) {
+    $rowPattern = '/^\|\s*' . preg_quote($decisionId, '/')
+        . '\s*\|[^|]+\|\s*ACTIVE\s*\|[^|]+\|\s*\[[^\]]+\]\([^)]+\)\s*\|\s*'
+        . '\[Package Reference\]\([^)]+\)\s*\|/m';
+    if (preg_match($rowPattern, $decisionIndex) !== 1) {
+        $errors[] = 'docs/decisions/DECISIONS_INDEX.md: missing ACTIVE current decision row with record and Package Reference owner: ' . $decisionId;
+    }
+}
+
+// Keep both supported package archive mechanisms excluding pre-publication
+// decision and migration history from first-RC distribution artifacts.
+$requiredDistributionPaths = [
+    'dcos/ADR-018-string-codes-instead-of-fk-in-i18n.md',
+    'dcos/ADR-019-host-owned-exact-language-code-in-i18n.md',
+    'docs/decisions/ADR-020-nullable-translation-type-metadata.md',
+    'docs/decisions/DECISIONS_INDEX.md',
+    'schema/migrations/2026-10-02-translation-type.sql',
+    'tests/Fixtures/Schema/schema.pre-s1.i18n.sql',
+    'tests/Integration/TranslationTypeMigrationTest.php',
+];
+$requiredComposerExclusions = [
+    '/dcos',
+    '/docs/decisions',
+    '/schema/migrations/2026-10-02-translation-type.sql',
+    '/tests/Fixtures/Schema/schema.pre-s1.i18n.sql',
+    '/tests/Integration/TranslationTypeMigrationTest.php',
+];
+$composerData = json_decode((string) file_get_contents('composer.json'), true);
+$composerExclusions = $composerData['archive']['exclude'] ?? [];
+foreach ($requiredComposerExclusions as $exclusion) {
+    if (!in_array($exclusion, $composerExclusions, true)) {
+        $errors[] = 'composer.json: archive.exclude is missing required path: ' . $exclusion;
+    }
+}
+foreach ($requiredDistributionPaths as $path) {
+    $attributeOutput = [];
+    exec('git check-attr export-ignore -- ' . escapeshellarg($path), $attributeOutput, $attributeStatus);
+    if ($attributeStatus !== 0 || !in_array($path . ': export-ignore: set', $attributeOutput, true)) {
+        $errors[] = '.gitattributes: export-ignore is missing for required path: ' . $path;
     }
 }
 
@@ -244,8 +306,9 @@ if ($errors !== []) {
 }
 
 echo sprintf(
-    "[i18n-docs] %d documents and %d src types: links, anchors, claims, API inventory, source/test identity (%d stale occurrences) and llms.txt shape are consistent\n",
+    "[i18n-docs] %d documents and %d src types: links, anchors, claims, API inventory, source/test identity (%d stale identity occurrences), first-RC current-state sweep (%d stale occurrences) and llms.txt shape are consistent\n",
     count($documents),
     $inventoried,
     $staleSourceTestIdentityOccurrences,
+    $staleFirstRcOccurrences,
 );

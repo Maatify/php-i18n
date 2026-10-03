@@ -145,7 +145,6 @@ Six maintained examples cover every material capability and run against a dispos
 | [CHANGELOG.md](CHANGELOG.md) | initial package contents under `[Unreleased]` |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | component boundaries |
 | [BOOK/INDEX.md](BOOK/INDEX.md) | conceptual, deep documentation; never overrides the Reference |
-| [docs/decisions/](docs/decisions/DECISIONS_INDEX.md) | current decision index and ADR-020 for the nullable translation type contract |
 | [llms.txt](llms.txt) | navigation for AI consumers |
 | [SECURITY.md](SECURITY.md) | vulnerability reporting and support policy |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | contribution boundaries and local verification |

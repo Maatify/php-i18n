@@ -116,6 +116,15 @@
             }
         }
     },
+    "archive": {
+        "exclude": [
+            "/dcos",
+            "/docs/decisions",
+            "/schema/migrations/2026-10-02-translation-type.sql",
+            "/tests/Fixtures/Schema/schema.pre-s1.i18n.sql",
+            "/tests/Integration/TranslationTypeMigrationTest.php"
+        ]
+    },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "scripts-descriptions": {
