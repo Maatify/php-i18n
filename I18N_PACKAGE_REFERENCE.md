@@ -11,7 +11,7 @@ The canonical reference for the stable public, runtime and behavioral contract o
 |---|---|
 | Composer identity | `maatify/php-i18n` |
 | Root namespace | `Maatify\I18n\` (PSR-4, `src/`) |
-| Distribution state | **Development, unpublished.** No tag, no release and no Packagist publication exist. |
+| Distribution state | Published Release Candidate `1.0.0-rc.1` through [Packagist](https://packagist.org/packages/maatify/php-i18n), with GitHub [tag and Release `v1.0.0-rc.1`](https://github.com/Maatify/php-i18n/releases/tag/v1.0.0-rc.1). No Published Stable release or Stable support line exists. |
 | Form today | Standalone Composer package / standalone repository. Everything in this file applies to the repository root. |
 | PHP | `^8.4` ([composer.json](composer.json)) |
 | Persistence | Package-owned MySQL schema of seven `maa_i18n_*` tables ([schema/schema.i18n.sql](schema/schema.i18n.sql)) through `PDO` |

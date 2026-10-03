@@ -4,9 +4,9 @@ This file records package contents by release target. The package's initial cont
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Release Preparation is active. Publication State is Unpublished: there is no tag, GitHub Release or Packagist publication yet. The target below has no actual release date.
+The `1.0.0-rc.1` Release Candidate was published on 2026-10-03 through Packagist. No Stable release or Stable support line exists.
 
-## [1.0.0-rc.1]
+## [1.0.0-rc.1] - 2026-10-03
 
 ### Added
 
@@ -22,3 +22,5 @@ Release Preparation is active. Publication State is Unpublished: there is no tag
 - Optional PHP-DI integration (`Adapter\PhpDi\I18nBindings`); the Core needs no container.
 - Canonical Package Reference, Usage Guide, executable examples and AI-consumer navigation (`llms.txt`).
 - Package verification: Unit and real-MySQL Integration suites, a Consumer Verification Harness, example smoke execution, and a package CI workflow.
+
+[1.0.0-rc.1]: https://github.com/Maatify/php-i18n/releases/tag/v1.0.0-rc.1

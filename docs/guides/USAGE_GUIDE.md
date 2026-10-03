@@ -2,7 +2,13 @@
 
 How to integrate `maatify/php-i18n` into an application. This guide presents the contract; it does not define one. The canonical contract and the complete Public Runtime API inventory live in [I18N_PACKAGE_REFERENCE.md](../../I18N_PACKAGE_REFERENCE.md).
 
-> **State:** Development, unpublished. This standalone Composer package is not on Packagist and has no tag or release. Composer requirements and dependencies are in [composer.json](../../composer.json).
+> **State:** Published Release Candidate `1.0.0-rc.1`, distributed through [Packagist](https://packagist.org/packages/maatify/php-i18n). No Published Stable release or Stable support line exists. Composer requirements and dependencies are in [composer.json](../../composer.json).
+
+Install the exact published RC in a consumer project:
+
+```bash
+composer require maatify/php-i18n:1.0.0-rc.1@RC
+```
 
 ## 1. Fit, Requirements and Boundaries
 
