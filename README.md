@@ -5,7 +5,7 @@
 ![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)
 
 [![Status](https://img.shields.io/badge/Status-Development-blue)](README.md)
-[![PHP](https://img.shields.io/badge/PHP-%5E8.4-8892BF)](composer.json)
+[![PHP](https://img.shields.io/badge/PHP-8.4-8892BF)](composer.json)
 [![License](https://img.shields.io/badge/License-Proprietary-green)](LICENSE)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-4E8CAE)](phpstan.neon)
 

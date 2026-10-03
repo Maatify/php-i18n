@@ -130,6 +130,85 @@ $llms = (string) file_get_contents('llms.txt');
 $readmeHeader = explode("\n---\n", $readme, 2)[0];
 $canonicalLogo = '![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)';
 
+
+$canonicalReadmeBadges = [
+    '[![Status](https://img.shields.io/badge/Status-Development-blue)](README.md)',
+    '[![PHP](https://img.shields.io/badge/PHP-8.4-8892BF)](composer.json)',
+    '[![License](https://img.shields.io/badge/License-Proprietary-green)](LICENSE)',
+    '[![Maatify Ecosystem](https://img.shields.io/badge/Maatify-Ecosystem-blueviolet)](https://github.com/Maatify)',
+];
+$requiredDocumentationBadges = [
+    '[![Usage Guide](https://img.shields.io/badge/Docs-Usage%20Guide-informational)](docs/guides/USAGE_GUIDE.md)',
+    '[![Examples](https://img.shields.io/badge/Docs-Examples-informational)](examples/)',
+    '[![Package Reference](https://img.shields.io/badge/Docs-Package%20Reference-informational)](I18N_PACKAGE_REFERENCE.md)',
+    '[![Changelog](https://img.shields.io/badge/Docs-Changelog-informational)](CHANGELOG.md)',
+    '[![Security](https://img.shields.io/badge/Docs-Security-informational)](SECURITY.md)',
+    '[![Contributing](https://img.shields.io/badge/Docs-Contributing-informational)](CONTRIBUTING.md)',
+];
+foreach ($canonicalReadmeBadges as $badge) {
+    if (substr_count($readmeHeader, $badge) !== 1) {
+        $errors[] = 'README.md: canonical unpublished badge is missing or duplicated: ' . $badge;
+    }
+}
+foreach ($requiredDocumentationBadges as $badge) {
+    if (substr_count($readmeHeader, $badge) !== 1) {
+        $errors[] = 'README.md: required documentation badge is missing or duplicated: ' . $badge;
+    }
+}
+if (str_contains($readmeHeader, 'style=for-the-badge')) {
+    $errors[] = 'README.md: for-the-badge is forbidden for README badges';
+}
+$badgeOrder = [
+    'Status-Development-blue',
+    'PHP-8.4-8892BF',
+    'License-Proprietary-green',
+    'PHPStan-Level%20Max-4E8CAE',
+    'Maatify-Ecosystem-blueviolet',
+    'Docs-Usage%20Guide-informational',
+    'Docs-Examples-informational',
+    'Docs-Package%20Reference-informational',
+    'Docs-Changelog-informational',
+    'Docs-Security-informational',
+    'Docs-Contributing-informational',
+];
+$previousBadgePosition = -1;
+foreach ($badgeOrder as $badgeToken) {
+    $position = strpos($readmeHeader, $badgeToken);
+    if ($position === false) {
+        if ($badgeToken === 'PHPStan-Level%20Max-4E8CAE') {
+            $errors[] = 'README.md: proven PHPStan Level Max badge is missing';
+        }
+        continue;
+    }
+    if ($position <= $previousBadgePosition) {
+        $errors[] = 'README.md: badge groups/order do not follow the canonical Status/PHP/License/PHPStan → Ecosystem → Documentation order';
+        break;
+    }
+    $previousBadgePosition = $position;
+}
+
+$governanceBadgeContracts = [
+    'CODE_OF_CONDUCT.md' => [
+        '[![Maatify I18n](https://img.shields.io/badge/Maatify-I18n-blue?style=for-the-badge)](https://github.com/Maatify/php-i18n)',
+        '[![Maatify Ecosystem](https://img.shields.io/badge/Maatify-Ecosystem-9C27B0?style=for-the-badge)](https://github.com/Maatify)',
+    ],
+    'SECURITY.md' => [
+        '[![Maatify I18n](https://img.shields.io/badge/Maatify-I18n-blue?style=for-the-badge)](https://github.com/Maatify/php-i18n)',
+        '[![Maatify Ecosystem](https://img.shields.io/badge/Maatify-Ecosystem-9C27B0?style=for-the-badge)](https://github.com/Maatify)',
+    ],
+];
+foreach ($governanceBadgeContracts as $document => $requiredBadges) {
+    $governanceText = (string) file_get_contents($document);
+    foreach ($requiredBadges as $badge) {
+        if (substr_count($governanceText, $badge) !== 1) {
+            $errors[] = $document . ': canonical governance identity badge is missing or duplicated: ' . $badge;
+        }
+    }
+    if (preg_match_all('/img\\.shields\\.io\\/badge\\//', $governanceText) !== 2) {
+        $errors[] = $document . ': exactly two governance identity badges are required';
+    }
+}
+
 if (substr_count($readmeHeader, $canonicalLogo) !== 1
     || preg_match_all('/!\[Maatify\.dev\]\([^\n)]+\)/', $readmeHeader) !== 1) {
     $errors[] = 'README.md: header must use exactly the canonical Maatify logo source';
