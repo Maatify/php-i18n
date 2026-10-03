@@ -123,6 +123,69 @@ foreach ($documents as $document) {
 
 }
 
+// S15: the first RC is allocated for preparation, but has not been published.
+$readme = (string) file_get_contents('README.md');
+$changelog = (string) file_get_contents('CHANGELOG.md');
+$llms = (string) file_get_contents('llms.txt');
+$readmeHeader = explode("\n---\n", $readme, 2)[0];
+$canonicalLogo = '![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)';
+
+if (substr_count($readmeHeader, $canonicalLogo) !== 1
+    || preg_match_all('/!\[Maatify\.dev\]\([^\n)]+\)/', $readmeHeader) !== 1) {
+    $errors[] = 'README.md: header must use exactly the canonical Maatify logo source';
+}
+if (str_contains($readmeHeader, 'https://github.com/Maatify.png')) {
+    $errors[] = 'README.md: previous GitHub avatar logo source is forbidden';
+}
+if (preg_match('/<img\b[^>]*(?:maatify|logo)[^>]*>/i', $readmeHeader) === 1) {
+    $errors[] = 'README.md: HTML logo or custom logo sizing is forbidden';
+}
+foreach (explode("\n", $readmeHeader) as $line) {
+    if (preg_match('/Maatify\.dev|maatify_logo|github\.com\/Maatify\.png/i', $line) === 1
+        && preg_match('/\b(?:width|height|size)\s*=|\{[^}]*\b(?:width|height)\s*=/i', $line) === 1) {
+        $errors[] = 'README.md: custom logo sizing is forbidden';
+    }
+}
+
+if (preg_match('/^## \[1\.0\.0-rc\.1\]\R(.*?)(?=^## |\z)/ms', $changelog, $targetSection) !== 1
+    || preg_match('/^### Added$/m', $targetSection[1]) !== 1
+    || preg_match('/^- /m', $targetSection[1]) !== 1) {
+    $errors[] = 'CHANGELOG.md: initial contents must be allocated under the undated 1.0.0-rc.1 target';
+}
+if (preg_match('/^## \[Unreleased\]\R(.*?)(?=^## |\z)/ms', $changelog, $unreleasedSection) === 1
+    && trim($unreleasedSection[1]) !== '') {
+    $errors[] = 'CHANGELOG.md: allocated initial contents must not remain under Unreleased';
+}
+if (preg_match('/initial (?:package )?contents[^\n]*\[Unreleased\]/i', $changelog) === 1
+    || str_contains($readme, '[Unreleased]')
+    || str_contains($llms, '[Unreleased]')) {
+    $errors[] = 'Release navigation: initial contents must not be described as Unreleased after allocation';
+}
+if (preg_match('/^\[1\.0\.0-rc\.1\]:/m', $changelog) === 1) {
+    $errors[] = 'CHANGELOG.md: unpublished RC must have no release link';
+}
+
+if (!str_contains($readme, 'Release Target: `1.0.0-rc.1`')
+    || !str_contains($readme, 'Publication State: Unpublished')
+    || !str_contains($readmeHeader, 'Status-Development-blue')
+    || preg_match('#img\.shields\.io/badge/Version-#i', $readme) === 1) {
+    $errors[] = 'README.md: release target, unpublished state and Development badge must stay synchronized';
+}
+if (!str_contains($llms, 'Release Target 1.0.0-rc.1')
+    || !str_contains($llms, 'Publication State Unpublished')
+    || !str_contains($llms, '[CHANGELOG.md](CHANGELOG.md)')) {
+    $errors[] = 'llms.txt: exact RC target and unpublished navigation must stay synchronized';
+}
+foreach (['README.md' => $readme, 'CHANGELOG.md' => $changelog, 'llms.txt' => $llms] as $document => $text) {
+    if (preg_match('/(?:1\.0\.0-rc\.1|release candidate|\bRC\b)\s+(?:(?:is|was|has been)\s+)?(?:published|released|externally available|resolvable|installable)\b/i', $text) === 1
+        || preg_match('/\bPublication State:\s*(?:Published|Release Candidate|Stable)\b/i', $text) === 1
+        || preg_match('/\b(?:release|publication) date\b\s*[:=-]?\s*\d{4}-\d{2}-\d{2}\b/i', $text) === 1
+        || preg_match('/\b(?:is|was|has been)\s+(?:available|published)\s+(?:on|via)\s+Packagist\b/i', $text) === 1
+        || preg_match('#github\.com/Maatify/php-i18n/(?:releases/tag|tree|tags)/v?1\.0\.0-rc\.1\b#i', $text) === 1) {
+        $errors[] = $document . ': unpublished RC must not claim publication, distribution or an existing tag';
+    }
+}
+
 /** Current package documentation and schema must retain the standalone artifact identity. */
 $currentArtifactIdentitySurfaces = array_merge(
     $currentStateDocuments,
