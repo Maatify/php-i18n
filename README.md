@@ -2,7 +2,7 @@
 
 # Maatify I18n
 
-![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)
+![Maatify.dev](https://github.com/Maatify.png?size=160)
 
 [![Status](https://img.shields.io/badge/Status-Development-blue)](README.md)
 [![PHP](https://img.shields.io/badge/PHP-%5E8.4-8892BF)](composer.json)
