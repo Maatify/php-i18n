@@ -52,7 +52,7 @@ This chapter provides end-to-end usage examples for common requirements.
 **Requirement:** Add translations for `es-MX` (Mexican Spanish) which falls back to `es-ES` (Spain Spanish).
 
 **Prerequisite:**
-The Host owns the language list and the fallback rule. This module stores exact codes only and never applies a fallback.
+The Host owns the language list and the fallback rule. This package stores exact codes only and never applies a fallback.
 
 **Steps:**
 1.  **Add Translations:**

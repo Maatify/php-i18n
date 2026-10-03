@@ -36,4 +36,4 @@ The library performs no auto-discovery or implicit loading. All state exists exp
 *   **Filesystem Loading:** The library does not read `.php` or `.json` files.
 *   **Frontend Asset Generation:** The library provides APIs to fetch translations but does not bundle them for clients.
 *   **Framework Integration:** The Core uses independent services and contracts and needs no container or framework. The only adapter is the optional PHP-DI wiring (`Adapter\PhpDi\I18nBindings`), which is never required.
-*   **Language Management:** Creating languages, text direction, active flags and fallback configuration are Host concerns. I18n only stores an exact, Host-owned `language_code` and never validates it semantically ([ADR-019](../dcos/ADR-019-host-owned-exact-language-code-in-i18n.md)).
+*   **Language Management:** Creating languages, text direction, active flags and fallback configuration are Host concerns. I18n only stores an exact, Host-owned `language_code` and never validates it semantically (see the [Package Reference](../I18N_PACKAGE_REFERENCE.md#4-language-code-contract)).

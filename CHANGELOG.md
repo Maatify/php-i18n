@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `maatify/php-i18n` are documented in this file.
+This file records package contents by release target. The package's initial contents remain under `[Unreleased]` until a release target is assigned.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -10,7 +10,7 @@ The package is in development and has not been published: there is no tag, relea
 
 ### Added
 
-- Nullable exact translation `type` metadata with opaque consumer-defined tokens, rich single/domain consumer reads, and an additive pre-S1 MySQL schema migration; value-only reads remain available.
+- Nullable exact translation `type` metadata with opaque consumer-defined tokens and rich single/domain consumer reads; nullable `type` is part of the fresh-install schema, and value-only reads remain available.
 - Governed, structured translation keys (`scope.domain.key_part`) with scope, domain and assignment management.
 - Exact-scope translation values keyed by a Host-owned, nullable `language_code`; runtime reads never fall back.
 - Fail-soft runtime reads (`TranslationReadService`, `TranslationDomainReadService`) and fail-hard writes with a typed exception catalog.

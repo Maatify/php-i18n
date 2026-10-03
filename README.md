@@ -61,8 +61,6 @@ composer install
 
 Then create the database objects once, on a fresh database, from [schema/schema.i18n.sql](schema/schema.i18n.sql). The file begins with `DROP TABLE IF EXISTS` for the seven tables, so never apply it over existing I18n data.
 
-For an existing pre-S1 database, use the additive [translation type migration](schema/migrations/2026-10-02-translation-type.sql) through the Host's migration process; the Package does not provide a migration runner.
-
 ## Quick Usage
 
 ```php
@@ -135,7 +133,7 @@ Six maintained examples cover every material capability and run against a dispos
 
 ## Schema
 
-[schema/schema.i18n.sql](schema/schema.i18n.sql) is the fresh-install schema authority: `maa_i18n_scopes`, `maa_i18n_domains`, `maa_i18n_domain_scopes`, `maa_i18n_keys`, `maa_i18n_translations`, `maa_i18n_domain_language_summary` (derived), `maa_i18n_key_stats` (derived). Existing pre-S1 databases can apply the additive [translation type migration](schema/migrations/2026-10-02-translation-type.sql). Ownership and semantics: [Reference section 8](I18N_PACKAGE_REFERENCE.md#8-persistence-and-schema).
+[schema/schema.i18n.sql](schema/schema.i18n.sql) is the fresh-install schema authority: `maa_i18n_scopes`, `maa_i18n_domains`, `maa_i18n_domain_scopes`, `maa_i18n_keys`, `maa_i18n_translations`, `maa_i18n_domain_language_summary` (derived), `maa_i18n_key_stats` (derived). Ownership and semantics: [Reference section 8](I18N_PACKAGE_REFERENCE.md#8-persistence-and-schema).
 
 ## Documentation
 
@@ -144,11 +142,9 @@ Six maintained examples cover every material capability and run against a dispos
 | [I18N_PACKAGE_REFERENCE.md](I18N_PACKAGE_REFERENCE.md) | the canonical public, runtime and behavioral contract |
 | [docs/guides/USAGE_GUIDE.md](docs/guides/USAGE_GUIDE.md) | integration walkthroughs |
 | [examples/](examples/) | maintained, executable examples |
-| [CHANGELOG.md](CHANGELOG.md) | change history |
+| [CHANGELOG.md](CHANGELOG.md) | initial package contents under `[Unreleased]` |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | component boundaries |
 | [BOOK/INDEX.md](BOOK/INDEX.md) | conceptual, deep documentation; never overrides the Reference |
-| [docs/decisions/](docs/decisions/DECISIONS_INDEX.md) | current decision index and ADR-020 for the nullable translation type contract |
-| [dcos/](dcos/) | legacy decision records ADR-018 and ADR-019 |
 | [llms.txt](llms.txt) | navigation for AI consumers |
 | [SECURITY.md](SECURITY.md) | vulnerability reporting and support policy |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | contribution boundaries and local verification |

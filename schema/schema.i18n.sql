@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS maa_i18n_scopes;
 SET FOREIGN_KEY_CHECKS=1;
 
 /* ==========================================================
- * I18N MODULE (TRANSLATION LAYER) — PACKAGE SCHEMA
+ * I18N PACKAGE — TRANSLATION LAYER SCHEMA
  * ----------------------------------------------------------
  * Authoritative fresh-install schema of the I18n package.
  * Package-owned tables (the complete set, `maa_i18n_` prefix):
@@ -393,7 +393,7 @@ CREATE TABLE maa_i18n_domain_language_summary (
  * Nature:
  * - Derived data (NON-authoritative)
  * - Fully rebuildable at any time
- * - Maintained by i18n module only
+ * - Maintained by the I18n package only
  *
  * Identity:
  * - `id` is the primary key.
