@@ -2,20 +2,26 @@
 
 # Maatify I18n
 
-![Maatify.dev](https://www.maatify.dev/assets/img/img/maatify_logo_white.svg)
+![Maatify.dev](https://github.com/Maatify.png?size=160)
 
 [![Status](https://img.shields.io/badge/Status-Development-blue)](README.md)
 [![PHP](https://img.shields.io/badge/PHP-%5E8.4-8892BF)](composer.json)
 [![License](https://img.shields.io/badge/License-Proprietary-green)](LICENSE)
 [![PHPStan](https://img.shields.io/badge/PHPStan-Level%20Max-4E8CAE)](phpstan.neon)
+
 [![Maatify Ecosystem](https://img.shields.io/badge/Maatify-Ecosystem-blueviolet)](https://github.com/Maatify)
 
 [![Usage Guide](https://img.shields.io/badge/Docs-Usage%20Guide-informational)](docs/guides/USAGE_GUIDE.md)
 [![Examples](https://img.shields.io/badge/Docs-Examples-informational)](examples/)
 [![Package Reference](https://img.shields.io/badge/Docs-Package%20Reference-informational)](I18N_PACKAGE_REFERENCE.md)
+[![Book](https://img.shields.io/badge/Docs-Book-informational)](BOOK/INDEX.md)
 [![Changelog](https://img.shields.io/badge/Docs-Changelog-informational)](CHANGELOG.md)
+[![Security](https://img.shields.io/badge/Docs-Security-informational)](SECURITY.md)
+[![Contributing](https://img.shields.io/badge/Docs-Contributing-informational)](CONTRIBUTING.md)
 
 `maatify/php-i18n` is a governed, database-driven translation layer for PHP: structured keys, exact-scope translation values in MySQL, fail-soft runtime reads, management reads for admin screens, and operational coverage facts. Language identity stays with the Host: I18n stores an exact, nullable language code and never applies a fallback.
+
+Development / Unpublished — there is currently no supported distribution install. See [Installation](#installation) for repository-development setup.
 
 </div>
 
@@ -121,6 +127,7 @@ Every exception defined by the package implements `Maatify\I18n\Exception\I18nEx
 - Authorization, authentication, rate limiting and who may call management services are Host concerns.
 - Translation values are opaque strings: escaping them for HTML, JSON or any other sink is the consumer's job.
 - The schema file is destructive on an existing database (see Installation).
+- See [SECURITY.md](SECURITY.md) for the vulnerability reporting and support policy.
 
 ## Examples
 
@@ -143,6 +150,9 @@ Six maintained examples cover every material capability and run against a dispos
 | [docs/decisions/](docs/decisions/DECISIONS_INDEX.md) | current decision index and ADR-020 for the nullable translation type contract |
 | [dcos/](dcos/) | legacy decision records ADR-018 and ADR-019 |
 | [llms.txt](llms.txt) | navigation for AI consumers |
+| [SECURITY.md](SECURITY.md) | vulnerability reporting and support policy |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | contribution boundaries and local verification |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | community participation expectations |
 
 ## Quality Status
 

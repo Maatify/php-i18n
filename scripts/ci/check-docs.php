@@ -17,17 +17,32 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 chdir($root);
 
-/** Consumer-facing documents (ADRs under dcos/ are historical decision records). */
+/** Maintained consumer and governance documents (ADRs under dcos/ are historical decision records). */
 $documents = array_merge(
-    ['README.md', 'I18N_PACKAGE_REFERENCE.md', 'ARCHITECTURE.md', 'CHANGELOG.md', 'llms.txt'],
+    ['README.md',
+        'I18N_PACKAGE_REFERENCE.md',
+        'ARCHITECTURE.md',
+        'CHANGELOG.md',
+        'llms.txt',
+        'SECURITY.md',
+        'CONTRIBUTING.md',
+        'CODE_OF_CONDUCT.md',
+    ],
     glob('docs/guides/*.md') ?: [],
     glob('BOOK/*.md') ?: [],
     glob('consumer-verification/*.md') ?: [],
 );
 
-/** Current consumer docs; historical ADRs under dcos/ are deliberately excluded. */
+/** Current-state consumer and governance docs; historical ADRs under dcos/ are deliberately excluded. */
 $currentStateDocuments = array_merge(
-    ['README.md', 'I18N_PACKAGE_REFERENCE.md', 'ARCHITECTURE.md', 'llms.txt'],
+    ['README.md',
+        'I18N_PACKAGE_REFERENCE.md',
+        'ARCHITECTURE.md',
+        'llms.txt',
+        'SECURITY.md',
+        'CONTRIBUTING.md',
+        'CODE_OF_CONDUCT.md',
+    ],
     glob('docs/guides/*.md') ?: [],
     glob('BOOK/*.md') ?: [],
 );
